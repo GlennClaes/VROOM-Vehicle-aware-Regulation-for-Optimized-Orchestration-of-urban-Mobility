@@ -5,6 +5,9 @@ on:
     branches:
       - 'feature/**'
       - 'Develop'
+  pull_request:
+    branches:
+      - 'Develop'
 
 jobs:
   ci:

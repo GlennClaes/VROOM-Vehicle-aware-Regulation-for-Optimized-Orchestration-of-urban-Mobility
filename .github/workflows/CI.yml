@@ -58,7 +58,7 @@ jobs:
       - name: Run frontend tests with coverage
         run: |
           cd frontend
-          npm run converage:check
+          npm run coverage:check
 
       # 9️⃣ Build Docker images (check only)
       - name: Build Docker images (check only)

@@ -1,8 +1,8 @@
-name: Auto Pull Requests 
+name: Auto Pull Requests
 
 on:
   workflow_run:
-    workflows: ["Continuous Integration"]  # Exacte naam van je CI workflow
+    workflows: ["Continuous Integration"]  # Exact name of your CI workflow
     types:
       - completed
 
@@ -11,13 +11,14 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      # 1️⃣ Checkout the repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # PR van feature/** naar Develop
-      - name: Create PR Feature to Develop
+      # 2️⃣ PR from feature/** to Develop
+      - name: Create PR from Feature to Develop
         if: startsWith(github.event.workflow_run.head_branch, 'feature/')
         uses: peter-evans/create-pull-request@v5
         with:
@@ -25,12 +26,12 @@ jobs:
           base: Develop
           branch-suffix: short-commit-hash
           title: "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop"
-          body: "Automatisch aangemaakt PR naar Develop. CI-tests voor feature geslaagd."
-          reviewers: "teamlid1,teamlid2"
+          body: "Automatically created PR to Develop. CI tests for the feature passed."
+          reviewers: "teammember1,teammember2"
           update-existing: true
 
-      # PR van Develop naar Main
-      - name: Create PR Develop to Main
+      # 3️⃣ PR from Develop to Main
+      - name: Create PR from Develop to Main
         if: github.event.workflow_run.head_branch == 'Develop'
         uses: peter-evans/create-pull-request@v5
         with:
@@ -38,6 +39,6 @@ jobs:
           base: main
           branch: release-from-develop
           title: "Release: Merge Develop into Main"
-          body: "Develop is succesvol bijgewerkt. Automatisch PR aangemaakt voor release naar Main."
-          reviewers: "teamlid1,teamlid2"
+          body: "Develop branch has been successfully updated. Automatically created PR for release to Main."
+          reviewers: "teammember1,teammember2"
           update-existing: true

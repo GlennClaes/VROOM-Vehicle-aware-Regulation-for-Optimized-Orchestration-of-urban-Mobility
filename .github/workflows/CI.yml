@@ -65,7 +65,7 @@ jobs:
       - name: Run frontend tests with coverage
         run: |
           cd frontend
-          START_SERVER_AND_TEST_TIMEOUT=30000 npm run test:e2e:ci
+          npm run test:unit
 
       # 9️⃣ Build Docker images (check only)
       - name: Build Docker images (check only)

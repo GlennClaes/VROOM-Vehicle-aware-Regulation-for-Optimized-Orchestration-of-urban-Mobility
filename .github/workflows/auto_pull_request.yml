@@ -1,0 +1,43 @@
+name: Auto Pull Requests 
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]  # Exacte naam van je CI workflow
+    types:
+      - completed
+
+jobs:
+  create-pr:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # PR van feature/** naar Develop
+      - name: Create PR Feature to Develop
+        if: startsWith(github.event.workflow_run.head_branch, 'feature/')
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: Develop
+          branch-suffix: short-commit-hash
+          title: "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop"
+          body: "Automatisch aangemaakt PR naar Develop. CI-tests voor feature geslaagd."
+          reviewers: "teamlid1,teamlid2"
+          update-existing: true
+
+      # PR van Develop naar Main
+      - name: Create PR Develop to Main
+        if: github.event.workflow_run.head_branch == 'Develop'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: main
+          branch: release-from-develop
+          title: "Release: Merge Develop into Main"
+          body: "Develop is succesvol bijgewerkt. Automatisch PR aangemaakt voor release naar Main."
+          reviewers: "teamlid1,teamlid2"
+          update-existing: true

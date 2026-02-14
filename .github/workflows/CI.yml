@@ -61,11 +61,11 @@ jobs:
           cd backend
           PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
 
-      # 8️⃣ Run frontend tests met coverage in package.json add "test": "npm run test:unit && npm run test:e2e",
+       # 8️⃣ Run frontend tests (unit + e2e) via start-server-and-test
       - name: Run frontend tests with coverage
         run: |
           cd frontend
-          npm run test
+          npm run test:e2e:ci
 
       # 9️⃣ Build Docker images (check only)
       - name: Build Docker images (check only)

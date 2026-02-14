@@ -71,3 +71,4 @@ jobs:
           
           # Probeer auto-merge aan te zetten
           gh pr merge "$PR_URL" --merge --auto
+          

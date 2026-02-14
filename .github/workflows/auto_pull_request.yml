@@ -27,7 +27,6 @@ jobs:
           title: "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop"
           body: "Automatically created PR to Develop. CI tests for the feature passed."
           reviewers: "teammember1,teammember2"
-          update-existing: true
 
       # PR from Develop to Main with auto-merge
       - name: Create PR from Develop to Main
@@ -40,6 +39,5 @@ jobs:
           title: "Release: Merge Develop into Main"
           body: "Develop branch has been successfully updated. Automatically created PR for release to Main."
           reviewers: "teammember1,teammember2"
-          update-existing: true
           auto-merge: true
           merge-method: merge   # of 'squash' / 'rebase' afhankelijk van je voorkeur

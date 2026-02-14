@@ -2,7 +2,7 @@ name: Auto Pull Requests
 
 on:
   workflow_run:
-    workflows: ["Continuous Integration"]  # Exact name of CI workflow
+    workflows: ["Continuous Integration"]
     types:
       - completed
 
@@ -10,34 +10,43 @@ jobs:
   create-pr:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # PR van feature/** naar Develop
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh -y
+
+      ############################################
+      # Feature → Develop
+      ############################################
       - name: Create PR from Feature to Develop
         if: startsWith(github.event.workflow_run.head_branch, 'feature/')
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GH_PAT }}
-          base: Develop
-          branch-suffix: short-commit-hash
-          title: "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop"
-          body: "Automatically created PR to Develop. CI tests for the feature passed."
-          reviewers: "teammember1,teammember2"
+        run: |
+          gh pr create \
+            --base Develop \
+            --head "${{ github.event.workflow_run.head_branch }}" \
+            --title "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop" \
+            --body "Automatically created PR to Develop. CI tests passed." \
+          || echo "PR already exists"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
-      # PR from Develop to Main with auto-merge
+      ############################################
+      # Develop → Main (auto merge)
+      ############################################
       - name: Create PR from Develop to Main
         if: github.event.workflow_run.head_branch == 'Develop'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GH_PAT }}
-          base: main
-          branch: release-from-develop
-          title: "Release: Merge Develop into Main"
-          body: "Develop branch has been successfully updated. Automatically created PR for release to Main."
-          reviewers: "teammember1,teammember2"
-          auto-merge: true
-          merge-method: merge   # of 'squash' / 'rebase' afhankelijk van je voorkeur
+        run: |
+          gh pr create \
+            --base main \
+            --head Develop \
+            --title "Release: Merge Develop into Main" \
+            --body "Develop branch updated. Automatically created PR for release." \
+          || echo "PR already exists"
+
+          # Enable auto-merge
+          gh pr merge Develop --merge --auto
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}

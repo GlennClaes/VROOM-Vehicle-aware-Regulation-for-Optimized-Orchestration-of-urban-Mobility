@@ -2,7 +2,7 @@ name: Auto Pull Requests
 
 on:
   workflow_run:
-    workflows: ["Continuous Integration"]  # Exact name of your CI workflow
+    workflows: ["Continuous Integration"]  # Exact name of CI workflow
     types:
       - completed
 
@@ -11,13 +11,12 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2️⃣ PR from feature/** to Develop
+      # PR van feature/** naar Develop
       - name: Create PR from Feature to Develop
         if: startsWith(github.event.workflow_run.head_branch, 'feature/')
         uses: peter-evans/create-pull-request@v5
@@ -30,7 +29,7 @@ jobs:
           reviewers: "teammember1,teammember2"
           update-existing: true
 
-      # 3️⃣ PR from Develop to Main
+      # PR from Develop to Main with auto-merge
       - name: Create PR from Develop to Main
         if: github.event.workflow_run.head_branch == 'Develop'
         uses: peter-evans/create-pull-request@v5
@@ -42,3 +41,5 @@ jobs:
           body: "Develop branch has been successfully updated. Automatically created PR for release to Main."
           reviewers: "teammember1,teammember2"
           update-existing: true
+          auto-merge: true
+          merge-method: merge   # of 'squash' / 'rebase' afhankelijk van je voorkeur

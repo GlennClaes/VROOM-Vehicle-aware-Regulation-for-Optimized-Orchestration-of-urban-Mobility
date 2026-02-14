@@ -2,7 +2,7 @@ name: Auto Pull Requests
 
 on:
   workflow_run:
-    workflows: ["Continuous Integration"]
+    workflows: ["Continuous Integration"]  # exact naam van je CI workflow
     types:
       - completed
 
@@ -39,9 +39,7 @@ jobs:
         if: github.event.workflow_run.head_branch == 'Develop'
         run: |
           PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
-          if [ -n "$PR_URL" ]; then
-            gh pr merge "$PR_URL" --merge --auto
-          else
+          if [ -z "$PR_URL" ]; then
             gh pr create \
               --base main \
               --head Develop \
@@ -49,7 +47,7 @@ jobs:
               --body "Develop branch updated. Automatically created PR for release." \
               --reviewer teammember1,teammember2
             PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
-            gh pr merge "$PR_URL" --merge --auto
           fi
+          gh pr merge "$PR_URL" --merge --auto
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}

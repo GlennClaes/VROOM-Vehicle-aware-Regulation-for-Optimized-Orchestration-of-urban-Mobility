@@ -15,12 +15,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install GitHub CLI
-        run: sudo apt-get install gh -y
+      - name: Setup GitHub CLI
+        uses: cli/gh-action@v2
+        with:
+          version: latest
 
-      ############################################
       # Feature → Develop
-      ############################################
       - name: Create PR from Feature to Develop
         if: startsWith(github.event.workflow_run.head_branch, 'feature/')
         run: |
@@ -29,24 +29,27 @@ jobs:
             --head "${{ github.event.workflow_run.head_branch }}" \
             --title "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop" \
             --body "Automatically created PR to Develop. CI tests passed." \
+            --reviewer teammember1,teammember2 \
           || echo "PR already exists"
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 
-      ############################################
-      # Develop → Main (auto merge)
-      ############################################
+      # Develop → Main (auto-merge)
       - name: Create PR from Develop to Main
         if: github.event.workflow_run.head_branch == 'Develop'
         run: |
-          gh pr create \
-            --base main \
-            --head Develop \
-            --title "Release: Merge Develop into Main" \
-            --body "Develop branch updated. Automatically created PR for release." \
-          || echo "PR already exists"
-
-          # Enable auto-merge
-          gh pr merge Develop --merge --auto
+          PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
+          if [ -n "$PR_URL" ]; then
+            gh pr merge "$PR_URL" --merge --auto
+          else
+            gh pr create \
+              --base main \
+              --head Develop \
+              --title "Release: Merge Develop into Main" \
+              --body "Develop branch updated. Automatically created PR for release." \
+              --reviewer teammember1,teammember2
+            PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
+            gh pr merge "$PR_URL" --merge --auto
+          fi
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}

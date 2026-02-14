@@ -1,4 +1,4 @@
-name: Continuous Integration & Auto-PR
+name: Continuous Integration
 
 on:
   push:
@@ -66,26 +66,4 @@ jobs:
           docker build -t vroom-backend ./backend
           docker build -t vroom-frontend ./frontend
 
-      # 🔟 PR van Feature naar Develop (Triggert alleen bij push op feature/**)
-      - name: Create PR Feature to Develop
-        if: success() && startsWith(github.ref, 'refs/heads/feature/')
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GH_PAT }}
-          base: Develop
-          branch-suffix: short-commit-hash
-          title: "Feature: ${{ github.ref_name }} ready for Develop"
-          body: "Automatisch aangemaakt PR naar Develop. CI-tests voor feature geslaagd."
-          reviewers: "teamlid1,teamlid2"
-
-      # 1️⃣1️⃣ PR van Develop naar Main (Triggert alleen bij push op Develop)
-      - name: Create PR Develop to Main
-        if: success() && github.ref == 'refs/heads/Develop'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GH_PAT }}
-          base: main
-          branch: release-from-develop
-          title: "Release: Merge Develop into Main"
-          body: "Develop is succesvol bijgewerkt. Automatisch PR aangemaakt voor release naar Main."
-          reviewers: "teamlid1,teamlid2"
+    

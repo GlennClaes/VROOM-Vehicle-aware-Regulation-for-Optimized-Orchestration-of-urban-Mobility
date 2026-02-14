@@ -8,13 +8,25 @@
     "build": "vite build",
     "preview": "vite preview --port 5173",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "vitest",
+    "test:unit": "vitest run --coverage",
     "test:e2e": "start-server-and-test 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
-  "test:e2e:ci": "start-server-and-test 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
+    "test:e2e:ci": "start-server-and-test 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
+     "coverage:check": "vitest run --coverage && npx vitest-coverage-check --threshold 80",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/"
+  },
+   "vitest": {
+    "coverage": {
+      "provider": "istanbul",
+      "reporter": ["text", "lcov"],
+      "all": true,
+      "lines": 80,
+      "functions": 80,
+      "branches": 80,
+      "statements": 80
+    }
   },
   "dependencies": {
     "pinia": "^3.0.4",

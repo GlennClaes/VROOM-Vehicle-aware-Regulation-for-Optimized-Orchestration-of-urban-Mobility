@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.services import greet_user
 
@@ -20,5 +20,8 @@ def health_check():
 
 @app.post("/greet", response_model=GreetResponse)
 def greet(request: GreetRequest):
-    message = greet_user(request.name)
-    return GreetResponse(message=message)
+    try:
+        message = greet_user(request.name)
+        return GreetResponse(message=message)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

@@ -2,52 +2,72 @@ name: Auto Pull Requests
 
 on:
   workflow_run:
-    workflows: ["Continuous Integration"]  # exact naam van je CI workflow
+    workflows: ["Continuous Integration"]  # Zorg dat dit EXACT de 'name:' is van je CI file
     types:
       - completed
 
 jobs:
   create-pr:
+    # Alleen uitvoeren als de CI succesvol was
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    
+    # Cruciaal: Geef de runner rechten om PR's aan te maken
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Pak de branch die de CI heeft getriggerd, niet de default branch
+          ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Setup GitHub CLI
         uses: cli/gh-action@v2
         with:
           version: latest
 
-      # Feature → Develop
+      # DEEL 1: Feature → Develop
       - name: Create PR from Feature to Develop
         if: startsWith(github.event.workflow_run.head_branch, 'feature/')
-        run: |
-          gh pr create \
-            --base Develop \
-            --head "${{ github.event.workflow_run.head_branch }}" \
-            --title "Feature: ${{ github.event.workflow_run.head_branch }} ready for Develop" \
-            --body "Automatically created PR to Develop. CI tests passed." \
-            --reviewer teammember1,teammember2 \
-          || echo "PR already exists"
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          echo "Checking for existing PR for $BRANCH_NAME to Develop..."
+          PR_EXISTS=$(gh pr list --head "$BRANCH_NAME" --base Develop --json number -q '.[0].number')
+          
+          if [ -z "$PR_EXISTS" ]; then
+            gh pr create \
+              --base Develop \
+              --head "$BRANCH_NAME" \
+              --title "Feature: $BRANCH_NAME ready for Develop" \
+              --body "Automatically created PR to Develop. CI tests passed." \
+              --reviewer teammember1,teammember2
+          else
+            echo "PR bestaat al (#$PR_EXISTS), overslaan."
+          fi
 
-      # Develop → Main (auto-merge)
+      # DEEL 2: Develop → Main (met auto-merge)
       - name: Create PR from Develop to Main
         if: github.event.workflow_run.head_branch == 'Develop'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          echo "Checking for existing PR for Develop to main..."
           PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
+          
           if [ -z "$PR_URL" ]; then
-            gh pr create \
+            PR_URL=$(gh pr create \
               --base main \
               --head Develop \
               --title "Release: Merge Develop into Main" \
               --body "Develop branch updated. Automatically created PR for release." \
-              --reviewer teammember1,teammember2
-            PR_URL=$(gh pr list --base main --head Develop --json url -q '.[0].url')
+              --reviewer teammember1,teammember2)
+            echo "Nieuwe PR aangemaakt: $PR_URL"
           fi
+          
+          # Probeer auto-merge aan te zetten
           gh pr merge "$PR_URL" --merge --auto
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}

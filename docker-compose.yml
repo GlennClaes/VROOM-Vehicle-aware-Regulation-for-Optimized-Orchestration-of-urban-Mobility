@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - DATABASE_URL=mysql+pymysql://myuser:mypassword@db:3306/mydb kan later Postgres worden
+      - LOG_PATH=/app/logs/app.log
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data       # persistentie voor database
+      - backend_logs:/app/logs       # logs
+      - rl_data:/app/rl_data         # reinforcement learning data
+    depends_on:
+      - frontend
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+
+  db:
+    image: mysql:8
+    container_name: mysql
+    environment:
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+      MYSQL_DATABASE: mydb
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  backend_data:
+  backend_logs:
+  rl_data:
+  db_data:

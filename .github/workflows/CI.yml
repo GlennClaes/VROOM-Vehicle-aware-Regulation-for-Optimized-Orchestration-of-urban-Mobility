@@ -48,21 +48,21 @@ jobs:
         run: |
           cd frontend
           npm ci
-
+          
       # 7️⃣ Run backend tests met coverage
       - name: Run backend tests with coverage
         run: |
           cd backend
-          pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
+          PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
 
-      # 8️⃣ Run frontend tests met coverage
+       # 8️⃣ Run frontend tests (unit + e2e) via start-server-and-test
       - name: Run frontend tests with coverage
         run: |
           cd frontend
-          npm run test
+          npm run test:unit
 
       # 9️⃣ Build Docker images (check only)
       - name: Build Docker images (check only)
         run: |
-          docker build -t myapp-backend ./backend
-          docker build -t myapp-frontend ./frontend
+          docker build -t vroom-backend ./backend
+          docker build -t vroom-frontend ./frontend

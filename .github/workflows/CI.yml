@@ -71,7 +71,7 @@ jobs:
         if: ${{ success() }}
         uses: peter-evans/create-pull-request@v5
         with:
-          github_token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT }}
           branch: ${{ github.ref_name }}  # source branch is de branch die de push triggerde
           base: Develop                  # target branch
           title: "Feature ready for review"

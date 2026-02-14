@@ -12,15 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # Checkout de feature branch die CI heeft gedraaid
+      - name: Checkout feature branch
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
 
+      # Creëer de PR naar develop
       - name: Create Pull Request to Develop
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref }} # of je feature branch
-          base: develop    
+          branch: ${{ github.event.workflow_run.head_branch }}  # source branch
+          base: develop                                       # target branch
           title: "Feature ready for review"
           body: "Automatisch aangemaakt PR naar develop. CI-tests geslaagd."
           reviewers: "teamlid1,teamlid2"

@@ -98,9 +98,9 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-  command: process.env.CI ? 'npm run dev -- --port 5173 --host' : 'npm run dev',
+  command: process.env.CI ? 'npm run preview -- --port 5173' : 'npm run dev',
   port: 5173,
   reuseExistingServer: !process.env.CI,
-  timeout: 60_000, // 2 minuten voor CI
+  timeout: 120_000, // 2 minuten voor CI
 },
 })

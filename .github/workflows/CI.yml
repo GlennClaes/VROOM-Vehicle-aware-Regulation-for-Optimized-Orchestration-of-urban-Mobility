@@ -42,6 +42,7 @@ jobs:
           cd backend
           pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -e .
 
       # 6️⃣ Install frontend dependencies
       - name: Install frontend dependencies

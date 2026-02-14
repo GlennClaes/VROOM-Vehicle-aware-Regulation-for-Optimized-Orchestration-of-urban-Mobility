@@ -78,4 +78,4 @@ jobs:
           title: "Feature ready for review"
           body: "Automatisch aangemaakt PR naar Develop. CI-tests geslaagd."
           reviewers: "teamlid1,teamlid2"
-          update-branch: true
+        

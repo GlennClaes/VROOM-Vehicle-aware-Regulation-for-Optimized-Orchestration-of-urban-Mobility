@@ -10,7 +10,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest",
     "test:e2e": "start-server-and-test 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
-    "test:e2e:ci": "start-server-and-test --timeout 30000 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
+"test:e2e:ci": "start-server-and-test 'npm run dev -- --port 5173' 5173 'playwright test --headless --workers=1'",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",

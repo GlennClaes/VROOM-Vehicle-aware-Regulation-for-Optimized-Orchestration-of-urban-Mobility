@@ -1,23 +1,23 @@
-name: Continuous Integration
+name: Continuous Integration & Auto-PR
 
 on:
   push:
     branches:
       - 'feature/**'
-  pull_request:
-    branches:
-      - Develop
-    
+      - 'Develop'
+
 jobs:
   ci:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
+      # 1️⃣ Checkout code (fetch-depth 0 is nodig voor git-operaties)
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # 2️⃣ Environment variables voor tests (tijdelijke DB / logs)
+      # 2️⃣ Environment variables voor tests
       - name: Set environment variables for testing
         run: |
           echo "DATABASE_URL=sqlite:///./tmp/test.db" >> $GITHUB_ENV
@@ -54,8 +54,8 @@ jobs:
           cd backend
           PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
 
-       # 8️⃣ Run frontend tests (unit + e2e) via start-server-and-test
-      - name: Run frontend tests with coverage
+      # 8️⃣ Run frontend tests
+      - name: Run frontend tests
         run: |
           cd frontend
           npm run test:unit
@@ -66,16 +66,26 @@ jobs:
           docker build -t vroom-backend ./backend
           docker build -t vroom-frontend ./frontend
 
-      # 🔟 Maak automatisch een Pull Request naar Develop als CI slaagt
-      - name: Create Pull Request to Develop
-        if: ${{ success() }}
+      # 🔟 PR van Feature naar Develop (Triggert alleen bij push op feature/**)
+      - name: Create PR Feature to Develop
+        if: success() && startsWith(github.ref, 'refs/heads/feature/')
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GH_PAT }}
-          branch: ${{ github.ref_name }}  # source branch is de branch die de push triggerde
-          base: Develop                  # target branch
-          title: "Feature ready for review"
-          body: "Automatisch aangemaakt PR naar Develop. CI-tests geslaagd."
+          base: Develop
+          branch-suffix: short-commit-hash
+          title: "Feature: ${{ github.ref_name }} ready for Develop"
+          body: "Automatisch aangemaakt PR naar Develop. CI-tests voor feature geslaagd."
           reviewers: "teamlid1,teamlid2"
-          push-to-fork: false
-        
+
+      # 1️⃣1️⃣ PR van Develop naar Main (Triggert alleen bij push op Develop)
+      - name: Create PR Develop to Main
+        if: success() && github.ref == 'refs/heads/Develop'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
+          base: main
+          branch: release-from-develop
+          title: "Release: Merge Develop into Main"
+          body: "Develop is succesvol bijgewerkt. Automatisch PR aangemaakt voor release naar Main."
+          reviewers: "teamlid1,teamlid2"

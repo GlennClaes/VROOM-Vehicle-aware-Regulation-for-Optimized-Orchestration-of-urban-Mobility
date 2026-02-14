@@ -66,3 +66,15 @@ jobs:
         run: |
           docker build -t vroom-backend ./backend
           docker build -t vroom-frontend ./frontend
+          
+      # 🔟 Maak automatisch een Pull Request naar Develop als CI slaagt
+      - name: Create Pull Request to Develop
+        if: ${{ success() }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}  # source branch is de branch die de push triggerde
+          base: Develop                  # target branch
+          title: "Feature ready for review"
+          body: "Automatisch aangemaakt PR naar Develop. CI-tests geslaagd."
+          reviewers: "teamlid1,teamlid2"

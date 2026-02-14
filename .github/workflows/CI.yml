@@ -55,7 +55,7 @@ jobs:
           PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
 
       # 8️⃣ Run frontend tests
-      - name: Run frontend tests
+      - name: Run frontend tests with coverage
         run: |
           cd frontend
           npm run converage:check

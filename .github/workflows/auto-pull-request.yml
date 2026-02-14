@@ -18,13 +18,13 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
 
-      # Creëer de PR naar develop
+      # Creëer de PR naar Develop (let op hoofdletter D!)
       - name: Create Pull Request to Develop
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.event.workflow_run.head_branch }}  # source branch
-          base: Develop                                       # target branch
+          base: Develop                                       # target branch exact zoals op GitHub
           title: "Feature ready for review"
-          body: "Automatisch aangemaakt PR naar develop. CI-tests geslaagd."
+          body: "Automatisch aangemaakt PR naar Develop. CI-tests geslaagd."
           reviewers: "teamlid1,teamlid2"

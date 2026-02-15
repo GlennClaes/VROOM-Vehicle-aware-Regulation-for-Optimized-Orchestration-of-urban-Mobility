@@ -1,14 +1,10 @@
 name: Continuous Integration
 
 on:
-  push:
-    branches:
-      - 'feature/**'
-      - 'Develop'
   pull_request:
     branches:
       - 'Develop'
-
+      - 'main'
 jobs:
   ci:
     runs-on: ubuntu-latest

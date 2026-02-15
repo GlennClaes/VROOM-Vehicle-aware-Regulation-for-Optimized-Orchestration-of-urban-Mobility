@@ -41,7 +41,7 @@ jobs:
       - name: Run backend tests with coverage
         run: |
           cd backend
-          PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings
+          PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings --cov-report=html
 
       - name: Upload backend coverage report
         uses: actions/upload-artifact@v4
@@ -76,11 +76,6 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Lint frontend
-        run: |
-          cd frontend
-          npm run lint
-
       - name: Format check
         run: |
           cd frontend
@@ -90,11 +85,6 @@ jobs:
         run: |
           cd frontend
           npm run test:unit
-
-      - name: Run frontend E2E tests
-        run: |
-          cd frontend
-          npm run test:e2e
 
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4

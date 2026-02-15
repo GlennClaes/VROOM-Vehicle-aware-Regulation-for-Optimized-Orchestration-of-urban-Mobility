@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,16 +19,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push backend Docker image
+      - name: Build and push backend image
         run: |
-          docker build -t mydockerhubuser/myapp-backend:latest ./backend
-          docker push mydockerhubuser/myapp-backend:latest
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vroom-backend:latest ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/vroom-backend:latest
 
-      - name: Build and push frontend Docker image
+      - name: Build and push frontend image
         run: |
-          docker build -t mydockerhubuser/myapp-frontend:latest ./frontend
-          docker push mydockerhubuser/myapp-frontend:latest
-
-      - name: Deploy to production server
-        run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash ~/deploy.sh'
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/vroom-frontend:latest ./frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/vroom-frontend:latest

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Normal Traffic",
+    "description": "Average traffic volume",
+    "config_file": "../scenarios/hasselt_xl/normal.sumocfg",
+    "is_default": true,
+    "presets": []
+  },
+  {
+    "name": "Rush Hour",
+    "description": "High traffic volume",
+    "config_file": "../scenarios/hasselt_xl/rush_hour.sumocfg",
+    "is_default": false,
+    "presets": [
+      {
+        "id": "preset-16f27936",
+        "name": "iets",
+        "strategy": "sam",
+        "update_interval": 60,
+        "sam_model": "dqn_universal_final.pt"
+      }
+    ]
+  },
+  {
+    "name": "Quiet Traffic",
+    "description": "Low traffic volume",
+    "config_file": "../scenarios/hasselt_xl/quiet.sumocfg",
+    "is_default": false,
+    "presets": []
+  },
+  {
+    "name": "Night Traffic",
+    "description": "Minimal traffic at night",
+    "config_file": "../scenarios/hasselt_xl/night.sumocfg",
+    "is_default": false,
+    "presets": []
+  }
+]

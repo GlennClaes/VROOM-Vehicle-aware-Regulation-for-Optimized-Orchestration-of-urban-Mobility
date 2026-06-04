@@ -1,28 +1,34 @@
-import { mergeConfig, defineConfig, configDefaults } from 'vitest/config'
-import viteConfig from './vite.config'
+import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
 
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
-    test: {
-      environment: 'jsdom',
-      exclude: [...configDefaults.exclude, 'e2e/**'],
-      coverage: {
-        provider: 'v8', // v8 is sneller, maar zorg dat dit matcht met je 'istanbul' voorkeur
-        reporter: ['text', 'lcov', 'html'], // Voeg 'html' toe voor visuele hulp!
-        exclude: [
-        'src/main.js'
-        ],
-        include: ['src/**/*.{js,ts,vue}'],
-        all: true,
-        // Voeg dit toe om de 80% echt af te dwingen:
-        thresholds: {
-          lines: 80,
-          functions: 80,
-          branches: 80,
-          statements: 80
-        }
-      }
-    }
-  })
-)
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/__tests__/setup.js'],
+    pool: 'forks',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{js,ts,vue}'],
+      exclude: ['src/main.js', 'node_modules/**'],
+      all: true,
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
+  },
+
+
+})

@@ -1,0 +1,62 @@
+# Handle line endings automatically for files detected as text
+# and leave binary files untouched.
+* text=auto
+
+#
+# Text files: Force LF line endings
+# (Crucial for scripts and Dockerfiles to run correctly in Linux/Docker)
+#
+*.sh            text eol=lf
+Dockerfile*     text eol=lf
+.dockerignore   text eol=lf
+*.py            text eol=lf
+*.sql           text eol=lf
+*.js            text eol=lf
+*.jsx           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+*.json          text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.md            text eol=lf
+*.vue           text eol=lf
+*.txt           text eol=lf
+LICENSE         text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.editorconfig   text eol=lf
+.prettierrc     text eol=lf
+.oxlintrc.json  text eol=lf
+.oxfmtrc.json   text eol=lf
+
+#
+# Binary files
+#
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.pdf           binary
+*.zip           binary
+
+#
+# Linguist overrides (Language detection)
+#
+*.sql           linguist-language=sql
+Dockerfile*     linguist-language=dockerfile
+*.sh            linguist-language=shell
+*.py            linguist-language=python
+*.js            linguist-language=javascript
+*.jsx           linguist-language=javascript
+*.ts            linguist-language=typescript
+*.tsx           linguist-language=typescript
+*.vue           linguist-language=vue
+*.css           linguist-language=css
+*.html          linguist-language=html
+*.json          linguist-language=json
+*.yml           linguist-language=yaml
+*.yaml          linguist-language=yaml
+*.md            linguist-language=markdown

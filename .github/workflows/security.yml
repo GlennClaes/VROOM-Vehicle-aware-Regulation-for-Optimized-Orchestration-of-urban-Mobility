@@ -1,0 +1,71 @@
+name: Security (Bandit)
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  python-security:
+    name: Python Security (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          
+      - name: Install Bandit
+        run: pip install bandit
+        
+      - name: Run Bandit Scan
+        run: |
+          bandit -r backend/ -ll -ii
+
+  javascript-security:
+    name: JavaScript Security (ESLint & Audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install --legacy-peer-deps
+
+      - name: Run npm audit
+        run: |
+          cd frontend
+          npm audit --audit-level=high || echo "Vulnerabilities found, please review logs."
+
+      - name: Run ESLint Security Check
+        run: |
+          cd frontend
+          npm run lint:eslint
+
+  project-security:
+    name: Dependency Security (Trivy Scan)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy FS vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+

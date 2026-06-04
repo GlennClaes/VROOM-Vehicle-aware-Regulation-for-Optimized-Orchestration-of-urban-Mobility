@@ -1,27 +1,57 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from app.services import greet_user
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from app.db.session import create_db_and_tables
+from app.api.routes import auth
+from app.api.routes import users
+from app.core.cors import add_cors
+from app.api.routes import rl
+from app.api.routes import simulations
+from app.api.routes import presets
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Initialize Database
+    create_db_and_tables()
+    
+    # 2. Pre-load the RL model in a background thread so the first prediction is instant
+    import threading
+    def _preload_rl():
+        try:
+            print("[Startup] Starting RL model pre-load...", flush=True)
+            from app.api.routes.rl import preload_agent
+            preload_agent()
+            print("[Startup] RL model pre-load complete.", flush=True)
+        except Exception as e:
+            print(f"[Startup] RL model pre-load failed (non-fatal): {e}", flush=True)
+            import traceback
+            traceback.print_exc()
 
+    threading.Thread(target=_preload_rl, daemon=True).start()
+    
+    yield
 
-class GreetRequest(BaseModel):
-    name: str
+app = FastAPI(title="Universal Traffic AI API", lifespan=lifespan)
 
-
-class GreetResponse(BaseModel):
-    message: str
-
-
-@app.get("/health")
+@app.get("/health", tags=["System"])
 def health_check():
-    return {"status": "ok"}
+    return {"status": "healthy"}
 
+# Voeg CORS toe
+add_cors(app)
 
-@app.post("/greet", response_model=GreetResponse)
-def greet(request: GreetRequest):
-    try:
-        message = greet_user(request.name)
-        return GreetResponse(message=message)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# Voeg security headers middleware toe
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# Voeg auth routes toe
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(rl.router)
+app.include_router(simulations.router)
+app.include_router(presets.router)

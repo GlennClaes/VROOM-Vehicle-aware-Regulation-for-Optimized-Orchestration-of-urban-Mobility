@@ -1,14 +1,27 @@
 name: Continuous Integration
 
 on:
-  pull_request:
+  push:
     branches:
-      - 'Develop'
+      - 'develop'
       - 'main'
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - 'develop'
+      - 'main'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+
 
 jobs:
   backend:
     runs-on: ubuntu-latest
+    outputs:
+      backend_coverage: ${{ steps.backend_cov.outputs.COVERAGE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,8 +30,8 @@ jobs:
 
       - name: Set environment variables for testing
         run: |
-          echo "DATABASE_URL=sqlite:///./tmp/test.db" >> $GITHUB_ENV
-          echo "LOG_PATH=/tmp/logs/test.log" >> $GITHUB_ENV
+          echo "DATABASE_URL=sqlite:///./test.db" >> $GITHUB_ENV
+          echo "LOG_PATH=/tmp/test.log" >> $GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -40,19 +53,40 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run backend tests with coverage
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          LOG_PATH: /tmp/test.log
         run: |
-          cd backend
-          PYTHONPATH=. pytest --cov=app --cov-fail-under=80 --maxfail=1 --disable-warnings --cov-report=html
+          PYTHONPATH=. pytest --cov=app --cov=baseline --cov-fail-under=80 --maxfail=1 --disable-warnings --cov-report=term-missing --cov-report=json:coverage.json
+          
+      - name: Extract backend coverage
+        id: backend_cov
+        working-directory: backend
+        run: |
+          COVERAGE=$(python -c "import json; print(round(json.load(open('coverage.json'))['totals']['percent_covered']))")
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Backend coverage: $COVERAGE%"
 
       - name: Upload backend coverage report
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
-          path: backend/htmlcov
+          path: backend/coverage.json
+
+      - name: Create Backend Job Summary
+        run: |
+          echo "## 🐍 Backend Test Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Coverage** | \`${{ steps.backend_cov.outputs.COVERAGE }}%\` | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | Passed | ✅ |" >> $GITHUB_STEP_SUMMARY
 
   frontend:
     runs-on: ubuntu-latest
     needs: backend
+    outputs:
+      frontend_coverage: ${{ steps.frontend_cov.outputs.COVERAGE }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,7 +109,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          npm ci
+          npm install --legacy-peer-deps
 
       - name: Format check
         run: |
@@ -87,13 +121,84 @@ jobs:
           cd frontend
           npm run test:unit
 
+      - name: Extract frontend coverage
+        id: frontend_cov
+        working-directory: frontend
+        run: |
+          COVERAGE=$(node -e "const fs = require('fs'); const summary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8')); console.log(Math.round(summary.total.lines.pct));")
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Frontend coverage: $COVERAGE%"
+
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
-          path: frontend/coverage
+          path: frontend/coverage/coverage-summary.json
+
+      - name: Create Frontend Job Summary
+        run: |
+          echo "## 🌐 Frontend Test Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Test Coverage** | \`${{ steps.frontend_cov.outputs.COVERAGE }}%\` | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | Passed | ✅ |" >> $GITHUB_STEP_SUMMARY
 
       - name: Build Docker images (check only)
         run: |
-          docker build -t vroom-backend ./backend
-          docker build -t vroom-frontend ./frontend
+          docker build -t vroom-backend ./backend -f ./backend/Dockerfile.prod
+          docker build -t vroom-frontend ./frontend -f ./frontend/Dockerfile.prod
+          docker build -t vroom-sumo-web3d ./sumo-web3d -f ./sumo-web3d/Dockerfile.prod
+
+      - name: Update PR Description with Coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          BE_COV: ${{ needs.backend.outputs.backend_coverage }}
+          FE_COV: ${{ steps.frontend_cov.outputs.COVERAGE }}
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            const beCov = parseInt(process.env.BE_COV);
+            const feCov = parseInt(process.env.FE_COV);
+            
+            let body = pr.body || '';
+            const startMarker = '<!-- COV_START -->';
+            const endMarker = '<!-- COV_END -->';
+            const coverageReport = `| Component | Coverage | Status |\n| :--- | :--- | :--- |\n| **Backend** | \`${beCov}%\` | ${beCov >= 80 ? '✅' : '❌'} |\n| **Frontend** | \`${feCov}%\` | ${feCov >= 80 ? '✅' : '❌'} |\n> Minimum required coverage: **80%**`;
+            
+            if (body.includes(startMarker) && body.includes(endMarker)) {
+              const before = body.split(startMarker)[0];
+              const after = body.split(endMarker)[1];
+              body = before + startMarker + '\n' + coverageReport + '\n' + endMarker + after;
+            } else {
+              // Fallback: Als de markers ontbreken, voeg ze toe
+              const coverageSection = `\n\n#### 📈 Test Coverage\n${startMarker}\n${coverageReport}\n${endMarker}`;
+              body += coverageSection;
+            }
+            
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              body: body
+            });
+
+
+
+  build-prod:
+    name: Verify Production Build
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Build production images
+        run: |
+          docker compose -f docker-compose.prod.yml build

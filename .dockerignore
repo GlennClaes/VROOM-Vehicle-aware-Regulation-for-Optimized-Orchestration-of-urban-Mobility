@@ -1,0 +1,26 @@
+# Python specifiek
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker & Git
+.git/
+.gitignore
+.dockerignore
+docker-compose.yml
+docker-compose.override.yml
+
+# Frontend (voor het geval je in de root bouwt)
+node_modules/
+dist/
+.env
+
+# OS bestanden
+.DS_Store
+Thumbs.db

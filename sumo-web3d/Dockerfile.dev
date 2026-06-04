@@ -1,0 +1,38 @@
+FROM node:20-alpine AS node-stage
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV SUMO_HOME=/usr/share/sumo
+ENV PATH="${SUMO_HOME}/bin:${PATH}"
+
+# Install Node.js and dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg python3 python3-pip python3-dev build-essential \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install SUMO from default Ubuntu 22.04 repositories
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sumo \
+    sumo-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY requirements.txt setup.py setup.cfg sumo_web3d/scenarios.json ./
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN pip3 install --no-cache-dir -e .
+
+ENV PYTHONPATH="${SUMO_HOME}/tools:${PYTHONPATH}"
+ENV ENV=development
+
+EXPOSE 5000 5678 3000
+
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]

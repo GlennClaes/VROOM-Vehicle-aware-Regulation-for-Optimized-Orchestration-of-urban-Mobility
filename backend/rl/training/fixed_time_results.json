@@ -1,0 +1,31 @@
+[
+  {
+    "green_duration": 30,
+    "runs": 3,
+    "avg_queue": 1.83,
+    "avg_reward": 15.23,
+    "individual_runs": [
+      {
+        "run": 1,
+        "green_duration": 30,
+        "avg_queue": 1.77,
+        "reward": 16.72,
+        "steps": 360
+      },
+      {
+        "run": 2,
+        "green_duration": 30,
+        "avg_queue": 1.84,
+        "reward": 14.73,
+        "steps": 360
+      },
+      {
+        "run": 3,
+        "green_duration": 30,
+        "avg_queue": 1.88,
+        "reward": 14.25,
+        "steps": 360
+      }
+    ]
+  }
+]

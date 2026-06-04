@@ -1,0 +1,25 @@
+# Python cache
+__pycache__/
+*.pyc
+.__pycache__/
+
+# Build / output
+output/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+
+# Bundled / generated static files
+*.bundle.js
+*.bundle.js.map
+*.pbf
+
+# Editor
+.vscode/
+
+# macOS
+.DS_Store
+
+.idea/

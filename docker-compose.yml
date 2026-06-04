@@ -1,53 +1,111 @@
-version: '3.9'
-
 services:
-  backend:
-    build: ./backend
-    container_name: backend
-    ports:
-      - "8000:8000"
-    environment:
-      - ENV=development
-      - DATABASE_URL=mysql+pymysql://myuser:mypassword@db:3306/mydb 
-      - LOG_PATH=/app/logs/app.log
-    volumes:
-      - ./backend:/app
-      - backend_data:/app/data       # persistentie voor database
-      - backend_logs:/app/logs       # logs
-      - rl_data:/app/rl_data         # reinforcement learning data
-    depends_on:
-      - db
-
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - ./frontend:/app
-
-  db:
-    image: mysql:8
+  mysql:
+    image: mysql:8.4
     container_name: mysql
     environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: vroomdb
       MYSQL_USER: myuser
       MYSQL_PASSWORD: mypassword
-      MYSQL_DATABASE: mydb
-      MYSQL_ROOT_PASSWORD: rootpassword
+      TZ: Europe/Brussels
     ports:
-    - "3307:3306"
+      - "3310:3306"
     volumes:
-    - db_data:/var/lib/mysql
+      - mysql_dev_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "myuser", "-pmypassword"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    image: vroom-backend:dev
+    container_name: backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "app"]
+    environment:
+      DATABASE_URL: mysql+pymysql://myuser:mypassword@mysql:3306/vroomdb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TZ: Europe/Brussels
+      UVICORN_RELOAD_EXCLUDE: "*/rl/*,*/__pycache__/*,*/scenarios/*,*/logs/*,*/rl_data/*,*/.pytest_cache/*,*/tests/*,*/.git/*"
+      OMP_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      NUMEXPR_NUM_THREADS: 1
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          memory: 512M
+    volumes:
+      - ./backend:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  sumo-web3d:
+    build:
+      context: ./sumo-web3d
+      dockerfile: Dockerfile.dev
+    image: vroom-sumo-web3d:dev
+    container_name: sumo-web3d
+    environment:
+      SUMO_HOME: /usr/share/sumo
+      SUMO_SCENARIO: /app/scenarios/hasselt_xl/osm.sumocfg
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      VITE_BASE_URL: /map/
+      ENV: development
+      TZ: Europe/Brussels
+      UVICORN_RELOAD_EXCLUDE: "*/scenarios/*,*/__pycache__/*,*/rl/*"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          memory: 512M
+    ports:
+      - "3000:3000"
+      - "5000:5000"
+      - "5678:5678"
+    volumes:
+      - ./backend/scenarios:/app/scenarios
+      - ./backend/rl/models:/app/rl/models
+      - ./sumo-web3d:/app
+      - /app/node_modules
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: vroom-frontend:dev
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - sumo-web3d
 
 volumes:
-  backend_data:
-  backend_logs:
-  rl_data:
-  db_data:
+  mysql_dev_data:

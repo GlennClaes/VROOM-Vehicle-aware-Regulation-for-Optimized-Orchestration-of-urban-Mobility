@@ -1,0 +1,67 @@
+{
+  "model": "dqn_mock_final.pt",
+  "episodes": 5,
+  "avg_reward": 14.81,
+  "std_reward": 2.03,
+  "avg_queue": 1.15,
+  "std_queue": 0.02,
+  "best_reward": 18.04,
+  "worst_reward": 11.92,
+  "individual": [
+    {
+      "reward": 14.92,
+      "avg_queue": 1.11,
+      "steps": 360,
+      "action_dist": [
+        0,
+        0,
+        0,
+        360
+      ]
+    },
+    {
+      "reward": 11.92,
+      "avg_queue": 1.16,
+      "steps": 360,
+      "action_dist": [
+        0,
+        0,
+        0,
+        360
+      ]
+    },
+    {
+      "reward": 13.67,
+      "avg_queue": 1.17,
+      "steps": 360,
+      "action_dist": [
+        0,
+        0,
+        0,
+        360
+      ]
+    },
+    {
+      "reward": 15.49,
+      "avg_queue": 1.14,
+      "steps": 360,
+      "action_dist": [
+        0,
+        0,
+        0,
+        360
+      ]
+    },
+    {
+      "reward": 18.04,
+      "avg_queue": 1.15,
+      "steps": 360,
+      "action_dist": [
+        0,
+        0,
+        0,
+        360
+      ]
+    }
+  ]
+}

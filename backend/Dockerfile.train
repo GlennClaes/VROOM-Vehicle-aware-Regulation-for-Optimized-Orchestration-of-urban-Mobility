@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+# Voorkom .pyc bestanden en forceer stdout/stderr logging
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Installeer systeemafhankelijkheden voor training en SUMO-interactie
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installeer PyTorch CPU (lichter voor Docker-omgevingen zonder GPU passthrough)
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Installeer overige backend dependencies
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+# Kopieer de code
+COPY . .
+
+# Specifieke entrypoint voor training
+# Dit start direct het training script in plaats van de API
+ENTRYPOINT ["python", "09_run-training.py"]

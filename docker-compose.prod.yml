@@ -1,0 +1,146 @@
+services:
+  gateway-prod:
+    image: nginx:alpine
+    container_name: gateway-prod
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
+      sumo-web3d:
+        condition: service_healthy
+
+  mysql-prod:
+    image: mysql:8.4
+    container_name: mysql-prod
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+      TZ: Europe/Brussels
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "myuser", "-pmypassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  redis-prod:
+    image: redis:alpine
+    container_name: redis-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: vroom-backend:prod
+    environment:
+      DATABASE_URL: mysql+pymysql://myuser:mypassword@mysql-prod:3306/mydatabase
+      REDIS_HOST: redis-prod
+      REDIS_PORT: 6379
+      TZ: Europe/Brussels
+      OMP_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      NUMEXPR_NUM_THREADS: 1
+    depends_on:
+      mysql-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
+        reservations:
+          memory: 512M
+    networks:
+      default:
+        aliases:
+          - backend
+
+  sumo-web3d:
+    build:
+      context: ./sumo-web3d
+      dockerfile: Dockerfile.prod
+    image: vroom-sumo-web3d:prod
+    container_name: sumo-web3d-prod
+    environment:
+      SUMO_HOME: /usr/share/sumo
+      SUMO_SCENARIO: /app/scenarios/hasselt_xl/osm.sumocfg
+      REDIS_HOST: redis-prod
+      REDIS_PORT: 6379
+      VITE_BASE_URL: /map/
+      ENV: production
+      TZ: Europe/Brussels
+    networks:
+      default:
+        aliases:
+          - sumo-web3d
+    volumes:
+      - ./backend/scenarios:/app/scenarios
+      - ./backend/rl/models:/app/rl/models
+      - rl_data:/app/rl_data
+    depends_on:
+      redis-prod:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/scenarios"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1.5G
+        reservations:
+          memory: 768M
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: vroom-frontend:prod
+    deploy:
+      replicas: 2
+    networks:
+      default:
+        aliases:
+          - frontend
+    depends_on:
+      - backend
+      - sumo-web3d
+
+volumes:
+  mysql_prod_data:
+  rl_data:

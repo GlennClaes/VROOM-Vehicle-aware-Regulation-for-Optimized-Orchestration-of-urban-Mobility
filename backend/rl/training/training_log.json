@@ -1,0 +1,62 @@
+[
+  {
+    "episode": 1,
+    "reward": -12751.274,
+    "ema_reward": -12751.274,
+    "avg_queue": 1.01,
+    "pressure": 2,
+    "fairness": 0.062,
+    "efficiency": -35420.21,
+    "epsilon": 0.199,
+    "loss": 11.86653,
+    "duration_s": 81.5
+  },
+  {
+    "episode": 2,
+    "reward": -10844.842,
+    "ema_reward": -12560.631,
+    "avg_queue": 1.47,
+    "pressure": 3,
+    "fairness": 0.135,
+    "efficiency": -30124.56,
+    "epsilon": 0.198,
+    "loss": 11.80954,
+    "duration_s": 74.4
+  },
+  {
+    "episode": 3,
+    "reward": -9721.434,
+    "ema_reward": -12276.711,
+    "avg_queue": 1.18,
+    "pressure": 1,
+    "fairness": 0.062,
+    "efficiency": -27003.98,
+    "epsilon": 0.197,
+    "loss": 11.38966,
+    "duration_s": 87.2
+  },
+  {
+    "episode": 4,
+    "reward": -11272.281,
+    "ema_reward": -12176.268,
+    "avg_queue": 1.07,
+    "pressure": 2,
+    "fairness": 0.092,
+    "efficiency": -31311.89,
+    "epsilon": 0.196,
+    "loss": 11.61856,
+    "duration_s": 83.5
+  },
+  {
+    "episode": 5,
+    "reward": -8726.775,
+    "ema_reward": -11831.319,
+    "avg_queue": 1.04,
+    "pressure": 4,
+    "fairness": 0.079,
+    "efficiency": -24241.04,
+    "epsilon": 0.195,
+    "loss": 11.30793,
+    "duration_s": 84.9
+  }
+]

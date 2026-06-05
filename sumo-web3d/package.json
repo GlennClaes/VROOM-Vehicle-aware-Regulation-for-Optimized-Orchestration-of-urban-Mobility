@@ -26,6 +26,7 @@
     "@types/dat.gui": "^0.7.9",
     "@types/geojson": "^7946.0.16",
     "@types/lodash-es": "^4.17.12",
+    "@types/node": "^25.9.1",
     "@types/proj4": "^2.5.5",
     "@types/stats.js": "^0.17.3",
     "@types/string-hash": "^1.1.3",

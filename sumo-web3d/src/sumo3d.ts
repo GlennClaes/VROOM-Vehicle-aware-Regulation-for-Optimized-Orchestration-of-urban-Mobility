@@ -43,7 +43,6 @@ export interface SumoState {
     };
     simulateSecs: number;
     snapshotSecs: number;
-    kpis?: Record<string, number>;
     aiDecisions?: AiDecision[];
 }
 
@@ -130,6 +129,7 @@ export default class Sumo3D {
     private lastSnapshotTime: number = 0;
     private snapshotInterval: number = 100; // ms
     private frameTime: number = 0;
+    private lastFrameTime: number = 0;
 
     constructor(parentElement: HTMLElement, init: InitResources, private params: SumoParams) {
         const startMs = window.performance.now();
@@ -300,25 +300,40 @@ export default class Sumo3D {
     // Helper function to bring the state of the object representing the vehicle
     // up to date with its VehicleInfo.
     updateVehicleMesh(vehicle: Vehicle) {
-        // This is now handled by interpolateVehicles() in the animate loop.
-        // We keep this for immediate updates if needed, but primary movement is interpolated.
         const v = vehicle.vehicleInfo;
         const [x, y, z] = this.transform.sumoXyzToXyz([v.x, v.y, v.z]);
         const angle = three.MathUtils.degToRad(180 - v.angle);
 
-        // Store as target state for interpolation
-        (vehicle as any).targetPos = new three.Vector3(
+        const newTarget = new three.Vector3(
             x - v.length / 2 * Math.sin(angle),
             y,
             z - v.length / 2 * Math.cos(angle)
         );
-        (vehicle as any).targetAngle = angle;
-        (vehicle as any).isStatic = false;
 
-        if (!(vehicle as any).prevPos) {
-            (vehicle as any).prevPos = (vehicle as any).targetPos.clone();
-            (vehicle as any).prevAngle = angle;
-            vehicle.mesh.position.copy((vehicle as any).targetPos);
+        const vAny = vehicle as any;
+        const now = window.performance.now();
+
+        if (vAny.targetPos) {
+            // Calculate velocity from position delta / time delta
+            const dt = (now - (vAny.targetTimestamp || now)) / 1000;
+            if (dt > 0.01 && dt < 2.0) {
+                vAny.velocity = new three.Vector3(
+                    (newTarget.x - vAny.targetPos.x) / dt,
+                    0,
+                    (newTarget.z - vAny.targetPos.z) / dt
+                );
+            }
+        }
+
+        vAny.targetPos = newTarget;
+        vAny.targetAngle = angle;
+        vAny.targetTimestamp = now;
+
+        if (!vAny.prevPos) {
+            vAny.prevPos = newTarget.clone();
+            vAny.prevAngle = angle;
+            vAny.velocity = new three.Vector3(0, 0, 0);
+            vehicle.mesh.position.copy(newTarget);
             vehicle.mesh.rotation.y = angle;
         }
 
@@ -472,54 +487,50 @@ export default class Sumo3D {
     }
 
     interpolateVehicles() {
-        if (this.lastSnapshotTime === 0) return;
+        const now = window.performance.now();
+        if (this.lastFrameTime === 0) {
+            this.lastFrameTime = now;
+            return;
+        }
+        const deltaTime = Math.min(0.1, (now - this.lastFrameTime) / 1000);
+        this.lastFrameTime = now;
 
-        // Use an even larger lag buffer to prioritize visual smoothness over latency
-        const lagBuffer = 2.0;
-        let alpha = (this.frameTime - this.lastSnapshotTime) / this.snapshotInterval + (1.0 - lagBuffer);
+        if (deltaTime <= 0) return;
 
-        // Clamp and ease for smoother motion (smoothstep)
-        alpha = Math.min(Math.max(alpha, 0), 1.0);
-        const easedAlpha = alpha * alpha * (3 - 2 * alpha);
-        const isFullyDone = (alpha >= 1.0);
+        // Lower decay factor slightly (e.g. 8.0) for a smoother glide, using velocity prediction
+        const lerpFactor = 1.0 - Math.exp(-8.0 * deltaTime);
 
         for (const id in this.vehicles) {
             const v = this.vehicles[id];
             const vAny = v as any;
-            if (vAny.prevPos && vAny.targetPos) {
-                if (vAny.isStatic) {
-                    continue;
-                }
-
-                const distSq = vAny.prevPos.distanceToSquared(vAny.targetPos);
-                if (distSq < 1e-6 && vAny.prevAngle === vAny.targetAngle) {
-                    vAny.isStatic = true;
-                    v.mesh.position.copy(vAny.targetPos);
-                    v.mesh.rotation.y = vAny.targetAngle;
-                    continue;
-                }
-
-                let actualAlpha = easedAlpha;
-
-                // Teleport snap only for very large jumps (60^2 = 3600)
+            if (vAny.targetPos) {
+                const distSq = v.mesh.position.distanceToSquared(vAny.targetPos);
+                
+                // Snap if it's a teleport or huge jump
                 if (distSq > 3600) {
-                    actualAlpha = 1.0;
-                }
-
-                if (actualAlpha >= 1.0) {
                     v.mesh.position.copy(vAny.targetPos);
                     v.mesh.rotation.y = vAny.targetAngle;
-                    if (isFullyDone) {
-                        vAny.isStatic = true;
-                    }
-                } else {
-                    v.mesh.position.lerpVectors(vAny.prevPos, vAny.targetPos, actualAlpha);
-
-                    let diff = vAny.targetAngle - vAny.prevAngle;
-                    if (diff > Math.PI) diff -= Math.PI * 2;
-                    if (diff < -Math.PI) diff += Math.PI * 2;
-                    v.mesh.rotation.y = vAny.prevAngle + diff * actualAlpha;
+                    continue;
                 }
+
+                // Extrapolate position using velocity to predict the current location between server updates
+                let currentTarget = vAny.targetPos.clone();
+                if (vAny.velocity && vAny.targetTimestamp) {
+                    const timeSinceUpdate = (now - vAny.targetTimestamp) / 1000;
+                    // Limit prediction time to 1.5 seconds to avoid drifting off track if updates stop
+                    if (timeSinceUpdate > 0 && timeSinceUpdate < 1.5) {
+                        currentTarget.addScaledVector(vAny.velocity, timeSinceUpdate);
+                    }
+                }
+
+                // Smoothly interpolate position towards the predicted current target
+                v.mesh.position.lerp(currentTarget, lerpFactor);
+
+                // Smoothly interpolate rotation
+                let diff = vAny.targetAngle - v.mesh.rotation.y;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                v.mesh.rotation.y += diff * lerpFactor;
             }
         }
     }

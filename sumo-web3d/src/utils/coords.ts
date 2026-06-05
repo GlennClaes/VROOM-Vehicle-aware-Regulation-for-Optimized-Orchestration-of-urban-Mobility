@@ -38,8 +38,11 @@ export function getTransforms(network: Network): Transform {
             return [x, bottom - y]
         },
 
-        xyToXyz([x, y]: number[]): [number, number, number] {
-            return [x, 0, bottom - y]
+        xyToXyz(xy: number[]): [number, number, number] {
+            const x = xy[0]
+            const y = xy[1]
+            const z = xy[2] ?? 0
+            return [x, z, bottom - y]
         },
 
         center(): [number, number] {

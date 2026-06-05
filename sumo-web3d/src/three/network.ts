@@ -225,10 +225,11 @@ export function makeStaticObjects(
     for (const junction of network.net.junction) {
         if (junction.type === 'internal') continue
         const points = parseShape(junction.shape).map((pt) => t.xyToXz(pt))
-        if (points.length < 4) continue
+        if (points.length < 3) continue
         try {
             const jMesh = flatMeshFromVertices(points, materials.JUNCTION)
             if (junction.z) jMesh.position.setY(Number(junction.z))
+            jMesh.updateMatrix()
             jMesh.receiveShadow = false
             jMesh.visible = false
             
@@ -243,14 +244,18 @@ export function makeStaticObjects(
             }
             group.add(jMesh)
 
+            // Clone geometry and apply the transformation matrix so the merged geometry is correctly rotated/translated
+            const transformedGeom = jMesh.geometry.clone()
+            transformedGeom.applyMatrix4(jMesh.matrix)
+
             // Collect for merging
-            junctionGeoms.push(jMesh.geometry)
+            junctionGeoms.push(transformedGeom)
             junctionUserDatas.push(jUserData)
 
             const avgX = meanBy(points, (p) => p[0])
             const avgZ = meanBy(points, (p) => p[1])
             osmIdToMeshes[junction.id] = [
-                { mesh: jMesh, position: new THREE.Vector3(avgX, 0, avgZ) },
+                { mesh: jMesh, position: new THREE.Vector3(avgX, Number(junction.z || 0), avgZ) },
             ]
         } catch {
             // skip malformed junctions

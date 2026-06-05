@@ -80,7 +80,6 @@ export interface Snapshot {
     }
     simulate_secs: number
     snapshot_secs: number
-    kpis?: Record<string, number>
     ai_decisions?: AiDecision[]
 }
 

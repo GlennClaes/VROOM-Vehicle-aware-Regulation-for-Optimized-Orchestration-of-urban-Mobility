@@ -110,7 +110,7 @@ export function lineString(
     const pts3: [number, number, number][] = points.map((p) => {
         const z = p[2] ?? 0
         return transform.xyToXyz !== undefined
-            ? transform.xyToXyz([p[0], p[1]])
+            ? transform.xyToXyz(p)
             : [p[0], z, transform.bottom - p[1]]
     })
 

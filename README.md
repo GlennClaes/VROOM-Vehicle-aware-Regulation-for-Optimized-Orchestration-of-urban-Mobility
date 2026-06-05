@@ -3,9 +3,9 @@
 [![Continuous Integration](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 [![Continuous Deployment](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml)
 [![Security Scan](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml)
-[![Latest Version](https://img.shields.io/badge/version-v0.0.11-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/releases)
-[![Backend Coverage](https://img.shields.io/badge/Backend_Coverage-92%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
-[![Frontend Coverage](https://img.shields.io/badge/Frontend_Coverage-92%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
+[![Latest Version](https://img.shields.io/badge/version-v0.0.12-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/releases)
+[![Backend Coverage](https://img.shields.io/badge/Backend_Coverage-89%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
+[![Frontend Coverage](https://img.shields.io/badge/Frontend_Coverage-91%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 
 VROOM is a research project for traffic-light control in the Hasselt XL SUMO network. The application combines a Vue dashboard, a FastAPI backend, a SUMO/Three.js 3D simulator and a PyTorch DQN-based reinforcement-learning pipeline. The goal is to compare fixed-time traffic control with learned control strategies and to make the simulation easy to run, inspect and evaluate.
 

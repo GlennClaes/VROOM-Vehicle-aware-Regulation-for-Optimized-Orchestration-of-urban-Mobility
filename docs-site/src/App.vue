@@ -1,299 +1,55 @@
 <template>
-  <div class="app-container">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
-      <div class="logo-section">
-        <div class="logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="3 11 22 2 13 22 11 13 3 11"></polygon>
-          </svg>
-        </div>
-        <div class="logo-text">
-          <h1>VROOM</h1>
-          <p>Documentatie Center</p>
-        </div>
-      </div>
+  <div class="documentation-shell">
+    <SideNavigation
+      :sections="filteredSections"
+      :active-section="activeSection"
+      :search-query="searchQuery"
+      @update:active-section="activeSection = $event"
+      @update:search-query="searchQuery = $event"
+    />
 
-      <div class="search-box">
-        <input 
-          type="text" 
-          v-model="searchQuery" 
-          placeholder="Zoek in documentatie..." 
-          class="search-input"
-        >
-      </div>
-
-      <ul class="nav-list">
-        <li 
-          v-for="tab in filteredTabs" 
-          :key="tab.id"
-          :class="['nav-item', { active: activeTab === tab.id }]"
-          @click="activeTab = tab.id"
-        >
-          <span v-html="tab.icon"></span>
-          {{ tab.label }}
-        </li>
-      </ul>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="main-content">
-      <!-- 1. Introductie -->
-      <section v-if="activeTab === 'intro'">
-        <h2>Introductie</h2>
-        <p>VROOM (Vehicle-aware Regulation for Optimized Orchestration of urban Mobility) is een geavanceerd onderzoeksproject gericht op het optimaliseren van verkeerslichten binnen de stad Hasselt (Hasselt XL netwerk).</p>
-        <p>Het project combineert een modern dashboard in Vue 3, een snelle FastAPI Python backend gekoppeld aan een native C++ reken-engine, en een realtime 3D simulator in WebGL (Three.js). Het ultieme doel is het trainen, testen en vergelijken van intelligente verkeerslichtregelingen aangedreven door Reinforcement Learning (DQN) met klassieke regelingen.</p>
-        
-        <div class="alert-box important">
-          <div>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-          </div>
-          <div>
-            <strong>Belangrijkste Kenmerken:</strong>
-            <p>Native C++ optimalisaties aan de backend zorgen voor ultrasnelle berekeningen, terwijl 3D WebGL geometry merging aan de frontend draw calls vermindert van duizenden naar minder dan 10, waardoor de hele app soepel op 60+ FPS blijft draaien.</p>
-          </div>
-        </div>
-
-        <h3>Kernonderdelen van het Systeem</h3>
-        <div class="grid-cols-2">
-          <div class="glass-panel feature-card">
-            <div class="card-icon blue">🚦</div>
-            <h4>Communicerende Kruispunten</h4>
-            <p>Kruispunten communiceren direct met elkaar en delen queue-data, inflow-prognoses en prioritair verkeer om verkeersgolven te anticiperen.</p>
-          </div>
-          <div class="glass-panel feature-card">
-            <div class="card-icon green">🧠</div>
-            <h4>DQN Reinforcement Learning</h4>
-            <p>AI agents leren patronen herkennen in wachttijden, filelengtes en vertragingen om de optimale verkeersfase te selecteren.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. Architectuur -->
-      <section v-else-if="activeTab === 'arch'">
-        <h2>Systeem Architectuur</h2>
-        <p>VROOM is modulair opgebouwd en verdeeld in drie afzonderlijke lagen die naadloos met elkaar communiceren via REST API's en WebSockets:</p>
-        
-        <div class="grid-cols-2">
-          <div class="glass-panel feature-card">
-            <div class="card-icon blue">💻</div>
-            <h4>Vue 3 Dashboard (Frontend)</h4>
-            <p>Het dashboard beheert instellingen, kiest simulatiestrategieën (Baseline vs AI), toont live statistieken en KPIs, en streamt realtime logs via Redis.</p>
-          </div>
-          <div class="glass-panel feature-card">
-            <div class="card-icon green">⚙️</div>
-            <h4>FastAPI Backend (RL & API)</h4>
-            <p>De backend beheert scenario's, laadt en serveert de PyTorch RL model-checkpoints, verwerkt deltas en communiceert met MySQL en Redis cache databases.</p>
-          </div>
-        </div>
-
-        <h3>Drielagen Model</h3>
-        <p>De 3D visualisatie (`sumo-web3d`) draait in een apart iframe. Zodra de simulatie start, opent de backend een SUMO-simulatorproces. De realtime voertuiglocaties worden door de backend verwerkt, gecached in Redis, en via een snelle WebSocket naar de frontend gestreamd voor vloeibare rendering.</p>
-      </section>
-
-      <!-- 3. C++ Reken-Engine -->
-      <section v-else-if="activeTab === 'cpp'">
-        <h2>C++ Reken-Engine</h2>
-        <p>Om prestaties te maximaliseren en Python GIL-bottlenecks te voorkomen, worden intensieve wiskundige berekeningen uitgevoerd door een geoptimaliseerde native C++ module (`prediction_engine.cpp`):</p>
-        
-        <div class="glass-panel feature-card" style="margin-top: 1.5rem;">
-          <h4>Belangrijke functies in de C++ Module:</h4>
-          <ul style="margin-left: 1.5rem; margin-top: 10px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px;">
-            <li><strong>record_flow / predict_flow:</strong> Voert exponentiële afvlakking (Exponential Smoothing) uit op stroommetingen per rijstrook om toekomstige instroomtrends te voorspellen.</li>
-            <li><strong>filter_vehicle_movement:</strong> Vermindert payload-grootte door te filteren welke voertuigen significant bewogen zijn (>10cm of >1.0 graad) ten opzichte van hun vorige frame.</li>
-            <li><strong>compute_green_wave_offset:</strong> Berekent dynamisch de faseverschuivingen tussen kruispunten op basis van actuele snelheidslimieten en afstand.</li>
-            <li><strong>calculate_queue_spillback_probability:</strong> Berekent de kans dat een wachtrij terugstroomt in het vorige kruispunt middels een sigmoïdale curve.</li>
-          </ul>
-        </div>
-
-        <h3>ctypes Binding</h3>
-        <p>De C++ code wordt tijdens het starten van de backend container gecompileerd naar een shared library (`libprediction_engine.so`) en via `ctypes` in Python ingeladen. Mocht er geen compiler aanwezig zijn, dan is er een pure Python fallback actief.</p>
-      </section>
-
-      <!-- 4. WebGL Optimalisatie -->
-      <section v-else-if="activeTab === 'webgl'">
-        <h2>3D WebGL Optimalisatie</h2>
-        <p>Het tonen van een gedetailleerd stadsnetwerk zoals Hasselt vereist normaal gesproken duizenden meshes en draw calls, wat de browser overbelast en wazige beelden veroorzaakt. VROOM lost dit op met geometry merging:</p>
-
-        <div class="grid-cols-2">
-          <div class="glass-panel feature-card">
-            <div class="card-icon green">⚡</div>
-            <h4>Geometry Merging</h4>
-            <p>Alle losse wegvakken en kruispuntvlakken worden gegroepeerd per materiaal en samengevoegd tot één enkele geometry met <code>BufferGeometryUtils.mergeGeometries</code>. Dit reduceert draw calls met 99%.</p>
-          </div>
-          <div class="glass-panel feature-card">
-            <div class="card-icon blue">🎯</div>
-            <h4>Face-Index Raycasting</h4>
-            <p>De individuele wegdelen zijn onzichtbaar in de scene aanwezig. Bij een klik op de samengevoegde geometry herleiden we via de <code>faceIndex</code> direct de originele weg-ID en tonen we de highlight.</p>
-          </div>
-        </div>
-
-        <h3>Delayed Shader Compiling</h3>
-        <p>Zware effecten zoals Ambient Occlusion (SSAO) en Anti-aliasing (SMAA) worden pas geïnitieerd zodra ze in de GUI worden ingeschakeld. Dit voorkomt shader-compilatie vertragingen tijdens het laden van de pagina.</p>
-      </section>
-
-      <!-- 5. Reinforcement Learning -->
-      <section v-else-if="activeTab === 'rl'">
-        <h2>DQN Reinforcement Learning</h2>
-        <p>VROOM maakt gebruik van een D3QN agent (Dueling Double Deep Q-Network) met Prioritized Experience Replay (PER) en Noisy Layers voor optimale exploratie:</p>
-        
-        <div class="glass-panel feature-card" style="margin-top: 1.5rem; padding: 2rem;">
-          <h4>DQN Configuraties:</h4>
-          <p style="margin-top: 10px;"><strong>State Vector:</strong> Het netwerk stuurt per kruispunt een observatievector met onder andere:</p>
-          <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
-            <li>Wachtrijlengte per rijstrook (lane queue).</li>
-            <li>Gemiddelde wachttijd per voertuig.</li>
-            <li>Huidige actieve fase-index van de verkeerslichten.</li>
-            <li>Prioritair voertuig indicatoren.</li>
-          </ul>
-          <p><strong>Reward Formulering:</strong> De reward stimuleert doorstroming en straft vertragingen en queue-spillbacks negatief af.</p>
-        </div>
-      </section>
-
-      <!-- 6. Interactieve Simulator -->
-      <section v-else-if="activeTab === 'playground'">
-        <h2>Interactieve Simulator</h2>
-        <p>Test hier live hoe de native C++ reken-engine de spillback-kans berekent. Beweeg de sliders om de wachtrij en rijstrookcapaciteit te wijzigen en zie hoe de sigmoïdale curve direct reageert.</p>
-
-        <div class="glass-panel playground-container">
-          <div class="control-group">
-            <div class="slider-container">
-              <div class="slider-label">
-                <span>Huidige Wachtrij (voertuigen)</span>
-                <strong>{{ currentQueue }}</strong>
-              </div>
-              <input type="range" min="0" :max="laneCapacity" v-model.number="currentQueue" class="slider">
-            </div>
-
-            <div class="slider-container">
-              <div class="slider-label">
-                <span>Rijstrook Capaciteit (voertuigen)</span>
-                <strong>{{ laneCapacity }}</strong>
-              </div>
-              <input type="range" min="10" max="100" v-model.number="laneCapacity" class="slider">
-            </div>
-          </div>
-
-          <div class="result-display">
-            <span class="percentage-text">{{ formattedProbability }}%</span>
-            <p style="margin-top: 8px; margin-bottom: 0;">Spillback Kans</p>
-            
-            <div class="status-indicator" :style="{ color: statusColor }">
-              <div class="dot-status" :style="{ backgroundColor: statusColor }"></div>
-              <span>{{ statusLabel }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 7. Setup & Beheer -->
-      <section v-else-if="activeTab === 'setup'">
-        <h2>Setup & Beheer</h2>
-        <p>Hieronder vind je de belangrijkste commando's om de VROOM applicatie te starten en te beheren.</p>
-
-        <div class="code-container">
-          <div class="code-header">
-            <span>Systeem Beheer Commando's</span>
-            <div class="tab-switcher">
-              <button 
-                v-for="shell in ['Make', 'Bash', 'PowerShell']" 
-                :key="shell"
-                :class="['tab-btn', { active: activeShell === shell }]"
-                @click="activeShell = shell"
-              >
-                {{ shell }}
-              </button>
-            </div>
-          </div>
-          <div class="code-body">
-            <pre v-if="activeShell === 'Make'"><code># Start de interactieve CLI
-make vroom
-
-# Start direct de ontwikkelomgeving
-make dev
-
-# Herbouw containers en start
-make dev-build
-
-# Voer alle tests uit
-make test</code></pre>
-            <pre v-else-if="activeShell === 'Bash'"><code># Start de interactieve CLI
-./vroom.sh
-
-# Start dev stack via docker-compose
-docker compose up
-
-# Herbouw dev stack
-docker compose up --build</code></pre>
-            <pre v-else-if="activeShell === 'PowerShell'"><code># Voer het opstartscript uit
-.\vroom.sh
-
-# Start docker-compose handmatig
-docker compose up</code></pre>
-          </div>
-        </div>
-      </section>
+    <main class="content-area">
+      <DocumentHeader />
+      <component :is="activeComponent" />
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+import DocumentHeader from './components/DocumentHeader.vue'
+import SideNavigation from './components/SideNavigation.vue'
+import AiSection from './components/sections/AiSection.vue'
+import ArchitectureSection from './components/sections/ArchitectureSection.vue'
+import AssignmentSection from './components/sections/AssignmentSection.vue'
+import DevopsSection from './components/sections/DevopsSection.vue'
+import OverviewSection from './components/sections/OverviewSection.vue'
+import ProcessSection from './components/sections/ProcessSection.vue'
+import ResearchSection from './components/sections/ResearchSection.vue'
+import SimulationSection from './components/sections/SimulationSection.vue'
+import { navigationSections } from './data/documentation'
 
 const searchQuery = ref('')
-const activeTab = ref('intro')
-const activeShell = ref('Make')
+const activeSection = ref('overview')
 
-// Interactive Playground State
-const currentQueue = ref(15)
-const laneCapacity = ref(30)
+const sectionComponents = {
+  overview: OverviewSection,
+  assignment: AssignmentSection,
+  research: ResearchSection,
+  architecture: ArchitectureSection,
+  ai: AiSection,
+  simulation: SimulationSection,
+  process: ProcessSection,
+  devops: DevopsSection,
+}
 
-const allTabs = [
-  { id: 'intro', label: 'Introductie', icon: '📖' },
-  { id: 'arch', label: 'Architectuur', icon: '🧱' },
-  { id: 'cpp', label: 'C++ Reken-Engine', icon: '⚙️' },
-  { id: 'webgl', label: 'WebGL Optimalisatie', icon: '⚡' },
-  { id: 'rl', label: 'Reinforcement Learning', icon: '🧠' },
-  { id: 'playground', label: 'Interactieve Simulator', icon: '🎮' },
-  { id: 'setup', label: 'Setup & Beheer', icon: '🛠️' },
-]
-
-const filteredTabs = computed(() => {
-  if (!searchQuery.value) return allTabs
-  return allTabs.filter(tab => 
-    tab.label.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+const filteredSections = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return navigationSections
+  return navigationSections.filter((section) => {
+    return `${section.label} ${section.keywords}`.toLowerCase().includes(query)
+  })
 })
 
-// Queue Spillback Math Calculation (matching C++)
-const spillbackProbability = computed(() => {
-  if (laneCapacity.value <= 0) return 1.0
-  const ratio = currentQueue.value / laneCapacity.value
-  if (ratio >= 1.0) return 1.0
-  if (ratio <= 0.0) return 0.0
-  // Sigmoidal function: 1.0 / (1.0 + exp(-10.0 * (ratio - 0.75)))
-  return 1.0 / (1.0 + Math.exp(-10.0 * (ratio - 0.75)))
-})
-
-const formattedProbability = computed(() => {
-  return Math.round(spillbackProbability.value * 100)
-})
-
-const statusColor = computed(() => {
-  const prob = spillbackProbability.value
-  if (prob < 0.3) return '#10b981' // green
-  if (prob < 0.7) return '#f59e0b' // orange
-  return '#ef4444' // red
-})
-
-const statusLabel = computed(() => {
-  const prob = spillbackProbability.value
-  if (prob < 0.3) return 'Veilig (Geen Spillback risico)'
-  if (prob < 0.7) return 'Waarschuwing (Matig Spillback risico)'
-  return 'Kritiek (Hoog Spillback risico)'
-})
+const activeComponent = computed(() => sectionComponents[activeSection.value] || OverviewSection)
 </script>

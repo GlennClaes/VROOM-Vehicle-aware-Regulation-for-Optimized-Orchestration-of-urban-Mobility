@@ -3,7 +3,7 @@
 [![Continuous Integration](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 [![Continuous Deployment](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml)
 [![Security Scan](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml)
-[![Latest Version](https://img.shields.io/badge/version-v0.0.10-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/releases)
+[![Latest Version](https://img.shields.io/badge/version-v0.0.11-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/releases)
 [![Backend Coverage](https://img.shields.io/badge/Backend_Coverage-92%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 [![Frontend Coverage](https://img.shields.io/badge/Frontend_Coverage-92%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 

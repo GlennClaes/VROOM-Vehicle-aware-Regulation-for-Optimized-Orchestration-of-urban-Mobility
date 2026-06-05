@@ -87,7 +87,7 @@ import {Navigation, Lock, Mail, EyeOff, Eye} from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
-import {useAuthStore} from '@/stores/AuthStore.js'
+import {useAuthStore} from '@/stores/AuthStore'
 import Footer from "@/components/ui/Footer.vue";
 
 const router = useRouter()

@@ -11,31 +11,14 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  rows: {
-    type: Array,
-    required: true,
-  },
-  firstHeading: {
-    type: String,
-    required: true,
-  },
-  secondHeading: {
-    type: String,
-    required: true,
-  },
-  firstKey: {
-    type: String,
-    required: true,
-  },
-  secondKey: {
-    type: String,
-    required: true,
-  },
-  narrow: {
-    type: Boolean,
-    default: false,
-  },
-})
+<script setup lang="ts">
+/* eslint-disable @typescript-eslint/no-explicit-any */
+defineProps<{
+  rows: Array<Record<string, any>>
+  firstHeading: string
+  secondHeading: string
+  firstKey: string
+  secondKey: string
+  narrow?: boolean
+}>()
 </script>

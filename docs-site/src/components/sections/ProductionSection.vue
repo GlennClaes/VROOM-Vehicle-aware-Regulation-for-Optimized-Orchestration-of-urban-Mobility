@@ -40,7 +40,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import SectionHeading from '../SectionHeading.vue'
 import IconCardGrid from '../IconCardGrid.vue'
 import InfoTable from '../InfoTable.vue'

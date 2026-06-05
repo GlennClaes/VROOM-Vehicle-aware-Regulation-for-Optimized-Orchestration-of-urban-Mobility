@@ -2,8 +2,12 @@ import os
 import time
 import asyncio
 import json
+import logging
 import nats
 from redis import Redis
+
+# Suppress internal NATS client traceback spam on connection failures
+logging.getLogger("nats").setLevel(logging.CRITICAL)
 
 class NatsMonitorService:
     def __init__(self):
@@ -19,10 +23,16 @@ class NatsMonitorService:
         self.redis = Redis(host=self.redis_host, port=self.redis_port, decode_responses=True)
         print(f"[NatsMonitor] Connected to Redis at {self.redis_host}:{self.redis_port}")
         
-        asyncio.create_task(self._monitor_loop())
+        self.task = asyncio.create_task(self._monitor_loop())
 
     async def stop(self):
         self.is_running = False
+        if self.task:
+            self.task.cancel()
+            try:
+                await self.task
+            except asyncio.CancelledError:
+                pass
         if self.nc:
             await self.nc.close()
             print("[NatsMonitor] Closed NATS connection")

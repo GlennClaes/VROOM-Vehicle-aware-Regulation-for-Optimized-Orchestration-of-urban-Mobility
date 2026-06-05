@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
 import Footer from "@/components/ui/Footer.vue"
-import { useAuthStore } from '@/stores/AuthStore.js'
+import { useAuthStore } from '@/stores/AuthStore'
 
 const auth = useAuthStore()
 

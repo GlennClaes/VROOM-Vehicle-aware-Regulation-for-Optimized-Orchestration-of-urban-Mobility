@@ -15,7 +15,7 @@
         type="search"
         placeholder="Search documentation"
         aria-label="Search documentation"
-        @input="$emit('update:searchQuery', $event.target.value)"
+        @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
       >
     </label>
 
@@ -39,24 +39,19 @@
   </aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Search } from 'lucide-vue-next'
 import { sourceNotes } from '../data/documentation'
+import type { NavigationSection } from '../data/documentation'
 
-defineProps({
-  sections: {
-    type: Array,
-    required: true,
-  },
-  activeSection: {
-    type: String,
-    required: true,
-  },
-  searchQuery: {
-    type: String,
-    required: true,
-  },
-})
+defineProps<{
+  sections: NavigationSection[]
+  activeSection: string
+  searchQuery: string
+}>()
 
-defineEmits(['update:activeSection', 'update:searchQuery'])
+defineEmits<{
+  (e: 'update:activeSection', value: string): void
+  (e: 'update:searchQuery', value: string): void
+}>()
 </script>

@@ -34,7 +34,7 @@
 <script setup>
 import { computed } from 'vue'
 import { MapPin, ExternalLink, Copy } from 'lucide-vue-next'
-import { clickedPoint } from '../../../composables/useSumoBridge.js'
+import { clickedPoint } from '../../../composables/useSumoBridge'
 
 const googleMapsUrl = computed(() => {
   if (!clickedPoint.value) return '#'

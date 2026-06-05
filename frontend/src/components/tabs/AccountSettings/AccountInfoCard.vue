@@ -47,7 +47,7 @@
 
 <script>
 import { Info as InfoIcon } from 'lucide-vue-next';
-import { useAccountStore } from '@/stores/AccountStore.js';
+import { useAccountStore } from '@/stores/AccountStore';
 
 export default {
   components: { InfoIcon },

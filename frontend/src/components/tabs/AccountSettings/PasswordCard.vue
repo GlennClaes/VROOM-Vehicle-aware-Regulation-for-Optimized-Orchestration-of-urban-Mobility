@@ -137,7 +137,7 @@
 
 <script>
 import { Lock as LockIcon, Eye as EyeIcon, EyeOff as EyeOffIcon } from 'lucide-vue-next';
-import { useAccountStore } from '@/stores/AccountStore.js';
+import { useAccountStore } from '@/stores/AccountStore';
 
 export default {
   components: { LockIcon, EyeIcon, EyeOffIcon },

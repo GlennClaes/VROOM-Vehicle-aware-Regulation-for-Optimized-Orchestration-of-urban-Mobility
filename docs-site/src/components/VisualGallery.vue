@@ -10,11 +10,10 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  assets: {
-    type: Array,
-    required: true,
-  },
-})
+<script setup lang="ts">
+import type { VisualAsset } from '../data/documentation'
+
+defineProps<{
+  assets: VisualAsset[]
+}>()
 </script>

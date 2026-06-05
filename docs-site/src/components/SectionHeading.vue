@@ -5,15 +5,9 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  eyebrow: {
-    type: String,
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-})
+<script setup lang="ts">
+defineProps<{
+  eyebrow: string
+  title: string
+}>()
 </script>

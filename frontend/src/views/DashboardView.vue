@@ -65,7 +65,7 @@
 </template>
 
 <script>
-import { useAuthStore } from '../stores/AuthStore.js';
+import { useAuthStore } from '../stores/AuthStore';
 import { Map, BarChart3, FileText, Settings, GitCompare, BrainCircuit } from 'lucide-vue-next';
 import { sumoState, hasUserStarted, selectedStrategy, sumoActions, handleStartSimulation } from '../composables/useSumoBridge';
 

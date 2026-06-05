@@ -38,7 +38,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import SectionHeading from '../SectionHeading.vue'
 import architectureDiagram from '../../assets/architecture-diagram.png'
 import { services } from '../../data/documentation'

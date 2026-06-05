@@ -68,15 +68,15 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import SectionHeading from '../SectionHeading.vue'
 import { metrics } from '../../data/documentation'
 
-const currentQueue = ref(15)
-const laneCapacity = ref(30)
+const currentQueue = ref<number>(15)
+const laneCapacity = ref<number>(30)
 
-const spillbackProbability = computed(() => {
+const spillbackProbability = computed<number>(() => {
   if (laneCapacity.value <= 0) return 1
   const ratio = currentQueue.value / laneCapacity.value
   if (ratio >= 1) return 1
@@ -84,16 +84,16 @@ const spillbackProbability = computed(() => {
   return 1 / (1 + Math.exp(-10 * (ratio - 0.75)))
 })
 
-const formattedProbability = computed(() => Math.round(spillbackProbability.value * 100))
+const formattedProbability = computed<number>(() => Math.round(spillbackProbability.value * 100))
 
-const statusColor = computed(() => {
+const statusColor = computed<string>(() => {
   const probability = spillbackProbability.value
   if (probability < 0.3) return '#27845f'
   if (probability < 0.7) return '#a45f14'
   return '#b42318'
 })
 
-const statusLabel = computed(() => {
+const statusLabel = computed<string>(() => {
   const probability = spillbackProbability.value
   if (probability < 0.3) return 'Low risk'
   if (probability < 0.7) return 'Watch closely'

@@ -89,7 +89,7 @@
 
 <script>
 import { User as UserIcon, Mail as MailIcon, Save as SaveIcon } from 'lucide-vue-next';
-import { useAccountStore } from '@/stores/AccountStore.js';
+import { useAccountStore } from '@/stores/AccountStore';
 
 export default {
   components: { UserIcon, MailIcon, SaveIcon },

@@ -15,7 +15,8 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { Component } from 'vue'
 import { computed, ref } from 'vue'
 import DocumentHeader from './components/DocumentHeader.vue'
 import SideNavigation from './components/SideNavigation.vue'
@@ -30,10 +31,10 @@ import ResearchSection from './components/sections/ResearchSection.vue'
 import SimulationSection from './components/sections/SimulationSection.vue'
 import { navigationSections } from './data/documentation'
 
-const searchQuery = ref('')
-const activeSection = ref('overview')
+const searchQuery = ref<string>('')
+const activeSection = ref<string>('overview')
 
-const sectionComponents = {
+const sectionComponents: Record<string, Component> = {
   overview: OverviewSection,
   assignment: AssignmentSection,
   research: ResearchSection,
@@ -53,5 +54,5 @@ const filteredSections = computed(() => {
   })
 })
 
-const activeComponent = computed(() => sectionComponents[activeSection.value] || OverviewSection)
+const activeComponent = computed<Component>(() => sectionComponents[activeSection.value] || OverviewSection)
 </script>

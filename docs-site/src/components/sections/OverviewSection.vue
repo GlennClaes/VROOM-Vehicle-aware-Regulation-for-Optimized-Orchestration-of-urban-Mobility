@@ -52,7 +52,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { CheckCircle2 } from 'lucide-vue-next'
 import SectionHeading from '../SectionHeading.vue'
 </script>

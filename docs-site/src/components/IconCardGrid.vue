@@ -8,15 +8,11 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  items: {
-    type: Array,
-    required: true,
-  },
-  variant: {
-    type: String,
-    default: '',
-  },
-})
+<script setup lang="ts">
+import type { IconCard } from '../data/documentation'
+
+defineProps<{
+  items: IconCard[]
+  variant?: string
+}>()
 </script>

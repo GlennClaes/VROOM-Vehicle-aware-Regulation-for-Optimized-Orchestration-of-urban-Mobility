@@ -57,7 +57,7 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { AlertTriangle } from 'lucide-vue-next'
 import SectionHeading from '../SectionHeading.vue'
 import IconCardGrid from '../IconCardGrid.vue'

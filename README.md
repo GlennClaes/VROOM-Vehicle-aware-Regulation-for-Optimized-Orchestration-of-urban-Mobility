@@ -55,6 +55,15 @@ make prod
 
 Production is served through the Nginx gateway on http://localhost. The gateway routes `/` to the frontend, `/api/` to FastAPI, `/map/` to SUMO-Web3D and `/ws-simulator/` to the simulator websocket.
 
+For the complete production-preparation stack with dashboard, backend, SUMO-Web3D, MySQL, Redis, NATS and mocked real traffic-light controllers:
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.production-real.yml up --build
+```
+
+Use `production-real-traffic-lights/.env.example` as the starting point for controller-specific environment variables.
+
 ## Architecture
 
 ```mermaid
@@ -97,23 +106,26 @@ flowchart TB
     gateway --> prodsumo
 ```
 
-## Communicating Traffic Lights & C++ Performance Optimization
+## Production-Ready Traffic-Light Control
 
-The project features a modular, scalable architecture supporting advanced traffic management:
+VROOM now has two traffic-light control layers:
 
-### 1. Communicating Intersections
-Intersections communicate peer-to-peer and via a centralized network Registry using a unified [CommunicationManager](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/vroom_architecture.py). Traffic lights exchange:
-- Queue status & vehicles counting.
-- Priority vehicle detections (emergency services/public transit).
-- Incident detections (stalled vehicles, high delays).
-- Predicted inflow trends.
-Neighboring traffic lights adapt their pressures and adjust green-wave offsets accordingly.
+### 1. Research and simulation control
 
-### 2. C++ Performance Optimization
-Heavy flow forecasting, exponential smoothing, green wave offset computations, and sigmoidal queue spillback probability checks are offloaded to a high-performance C++ module [prediction_engine.cpp](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/prediction_engine.cpp).
-- Compiled on container/app startup using [compile_cpp.py](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/compile_cpp.py).
-- Bound dynamically in Python via `ctypes`.
-- Automatically falls back to a pure-Python implementation if a C++ compiler is not present.
+The backend RL architecture supports communicating intersections through the Python-side [CommunicationManager](backend/rl/core/vroom_architecture.py). Intersections can exchange queue status, vehicle counts, priority detections, incidents and predicted inflow trends. Heavy forecasting helpers are accelerated through [prediction_engine.cpp](backend/rl/core/prediction_engine.cpp), compiled by [compile_cpp.py](backend/rl/core/compile_cpp.py), loaded through `ctypes`, and backed by a Python fallback when a compiler is unavailable.
+
+### 2. Physical traffic-light preparation
+
+The new [production-real-traffic-lights](production-real-traffic-lights) module prepares the project for real traffic-light cabinets:
+
+- C++17 controller core for predictable latency, explicit resource ownership and low-level hardware integration.
+- Hardware abstraction layer with mock, GPIO and PLC adapter boundaries.
+- Dependency-free C++ tests for the message protocol and fallback controller.
+- NATS-ready heartbeat/state/intent/command message formats.
+- Fail-safe behavior: lost communication triggers all-red first, then a local fixed-time fallback cycle.
+- Dockerfile, local compose file, `.env.example`, protocol docs and safety docs.
+
+The module is production-oriented preparation, not a certified road-side controller by itself. A real public-road deployment still needs certified PLC/GPIO bindings, cabinet wiring validation, hardware watchdogs, local traffic-engineering rules and regulatory acceptance testing.
 
 ## Repository Structure
 
@@ -125,12 +137,28 @@ Heavy flow forecasting, exponential smoothing, green wave offset computations, a
 |   |-- rl/                  # DQN agent, SUMO environment, training and evaluation scripts
 |   |-- scenarios/hasselt_xl # SUMO network, route files, profiles and generated outputs
 |   `-- Dockerfile.*         # dev, prod and training images
+|-- dashboard/               # Top-level dashboard index; implementation remains in frontend/
 |-- frontend/                # Vue dashboard, Pinia stores, Vitest tests and UI components
+|-- simulation/              # Top-level simulation index; implementation remains in sumo-web3d/
 |-- sumo-web3d/              # SUMO/Three.js simulator service and 3D viewer
+|-- production-real-traffic-lights/
+|   |-- include/             # C++ HAL, protocol and controller interfaces
+|   |-- src/                 # Controller, adapters, logger and CLI entrypoint
+|   |-- tests/               # C++ protocol and fallback tests
+|   |-- docs/                # Real-light protocol and safety notes
+|   `-- docker/              # Production controller Dockerfile
+|-- docs/                    # Documentation entry point and docs-site guidance
+|-- docs-site/               # Visual Vue/Vite documentation site for GitHub Pages
+|-- docker/                  # Deployment notes for compose files and service images
+|-- research/                # Paper, assignment, sprint sources, diagrams and SOURCES.md
+|-- src/                     # Architectural source-layout index
+|-- tests/                   # Test-location index across backend/frontend/controller
 |-- database/schema.sql      # MySQL schema loaded by Docker Compose
 |-- scripts/                 # Local helper scripts used by VROOM menu, Makefile and manual checks
 |-- docker-compose.yml       # Development stack
 |-- docker-compose.prod.yml  # Production-style stack with gateway
+|-- docker-compose.production-real.yml
+|                              # Full stack with dashboard, backend, SUMO, NATS and real-light mocks
 |-- nginx.gateway.conf       # Production reverse proxy routes
 `-- Makefile                 # Direct command shortcuts used by vroom.sh
 ```
@@ -174,7 +202,10 @@ Direct Makefile shortcuts:
 | `make dev` | Stops conflicting stacks and starts the development compose stack without rebuilding. |
 | `make dev-build` | Rebuilds and starts the development stack. Use this after dependency or Dockerfile changes. |
 | `make prod` | Starts the production-style stack using `docker-compose.prod.yml`. |
-| `make stop` | Stops both development and production compose stacks. |
+| `make prod-real` | Starts the full production-real stack with NATS and mocked C++ real-light controllers. |
+| `make real-controller-build` | Configures and builds the C++ real-light controller with CMake. |
+| `make real-controller-test` | Builds the C++ controller and runs its protocol/fallback tests. |
+| `make stop` | Stops development, production and production-real compose stacks. |
 | `make logs` | Follows logs from the development compose stack. |
 | `make status` | Shows container status and checks `http://localhost:8000/health`. |
 | `make dashboard` | Prints the useful dashboard/API URLs. |
@@ -274,6 +305,22 @@ Production compose (`docker-compose.prod.yml`) starts:
 
 One important detail: the development database is named `vroomdb`, while production uses `mydatabase`. The corresponding `DATABASE_URL` values are set in the compose files.
 
+Production-real compose (`docker-compose.production-real.yml`) adds the physical-controller preparation layer to the production stack:
+
+| Container | Image/build | Notes |
+| --- | --- | --- |
+| `nats` | `nats:2.10-alpine` | Low-latency communication bus for controller heartbeat, state, intent, command and ack messages. |
+| `real-traffic-controller-a` | `production-real-traffic-lights/docker/Dockerfile` | Mocked C++ controller node for junction A. |
+| `real-traffic-controller-b` | `vroom-real-traffic-controller:prod` | Second mocked C++ controller node using the same built image. |
+
+Build and test the C++ controller directly:
+
+```bash
+cmake -S production-real-traffic-lights -B production-real-traffic-lights/build
+cmake --build production-real-traffic-lights/build
+ctest --test-dir production-real-traffic-lights/build --output-on-failure
+```
+
 ## API Overview
 
 The backend registers these route groups:
@@ -288,6 +335,23 @@ The backend registers these route groups:
 | RL | `/rl/training/*`, `/rl/inference/*`, `/rl/models`, `/rl/simulation/status` |
 
 Use `http://localhost:8000/docs` while developing; it is the easiest way to verify request and response shapes.
+
+## Documentation and Research Sources
+
+The visual documentation site lives in [docs-site](docs-site). It uses the same favicon and a matching dashboard-style palette, and covers:
+
+- Assignment fit and Definition of Done.
+- Research paper, DQN/D3QN method, metrics and conclusions.
+- Architecture, Docker topology and DevOps runbook.
+- Jira and Confluence process evidence.
+- Sprint 0, Sprint 1, Sprint 2 and Sprint 3 progress.
+- Real-light production preparation with HALs, NATS, fallback behavior and tests.
+
+Source material is collected in [research](research):
+
+- [SOURCES.md](research/SOURCES.md) lists the assignment, research paper, sprint decks, architecture diagram, technologies and literature.
+- `research/papers/` contains the VROOM research paper.
+- `research/sprint-0/` through `research/sprint-3/` contain the project planning and presentation evidence.
 
 ## DevOps
 

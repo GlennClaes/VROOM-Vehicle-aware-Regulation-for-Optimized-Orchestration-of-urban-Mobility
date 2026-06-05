@@ -25,6 +25,7 @@ import AssignmentSection from './components/sections/AssignmentSection.vue'
 import DevopsSection from './components/sections/DevopsSection.vue'
 import OverviewSection from './components/sections/OverviewSection.vue'
 import ProcessSection from './components/sections/ProcessSection.vue'
+import ProductionSection from './components/sections/ProductionSection.vue'
 import ResearchSection from './components/sections/ResearchSection.vue'
 import SimulationSection from './components/sections/SimulationSection.vue'
 import { navigationSections } from './data/documentation'
@@ -39,6 +40,7 @@ const sectionComponents = {
   architecture: ArchitectureSection,
   ai: AiSection,
   simulation: SimulationSection,
+  production: ProductionSection,
   process: ProcessSection,
   devops: DevopsSection,
 }

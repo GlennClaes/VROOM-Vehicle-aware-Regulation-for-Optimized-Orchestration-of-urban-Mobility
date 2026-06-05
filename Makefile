@@ -1,6 +1,6 @@
 # 🚦 VROOM TRAFFIC AI - MAKEFILE 🚦
 
-.PHONY: setup dev prod stop logs status clean prune train eval test test-backend test-frontend dashboard backup restore doctor vroom init fix-perms
+.PHONY: setup dev prod prod-real real-controller-build real-controller-test stop logs status clean prune train eval test test-backend test-frontend dashboard backup restore doctor vroom init fix-perms
 
 # --- INTERACTIVE ---
 
@@ -39,6 +39,20 @@ prod:
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 	@echo "🏗️ Starting Production Environment..."
 	docker compose -f docker-compose.prod.yml up --build
+
+prod-real:
+	@echo "Starting VROOM production-real stack with NATS and mocked real-light controllers..."
+	docker compose down --remove-orphans 2>/dev/null || true
+	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+	docker compose -f docker-compose.production-real.yml down --remove-orphans 2>/dev/null || true
+	docker compose -f docker-compose.production-real.yml up --build
+
+real-controller-build:
+	cmake -S production-real-traffic-lights -B production-real-traffic-lights/build
+	cmake --build production-real-traffic-lights/build
+
+real-controller-test: real-controller-build
+	ctest --test-dir production-real-traffic-lights/build --output-on-failure
 
 # --- MONITORING ---
 
@@ -116,6 +130,7 @@ stop:
 	@echo "🛑 Stopping all services..."
 	docker compose down --remove-orphans
 	docker compose -f docker-compose.prod.yml down --remove-orphans
+	docker compose -f docker-compose.production-real.yml down --remove-orphans
 
 clean:
 	@echo "🧹 Hard Clean / Reset..."

@@ -1,0 +1,41 @@
+{
+  "transport": {
+    "framework": "nats",
+    "url": "nats://nats:4222",
+    "heartbeat_interval_ms": 500,
+    "communication_timeout_ms": 1500
+  },
+  "intersections": [
+    {
+      "id": "hasselt-xl-a",
+      "adapter": "mock",
+      "all_red_duration_ms": 1200,
+      "fixed_phase_duration_ms": 12000,
+      "signal_heads": [
+        { "id": "northbound", "group": "north_south" },
+        { "id": "southbound", "group": "north_south" },
+        { "id": "eastbound", "group": "east_west" },
+        { "id": "westbound", "group": "east_west" }
+      ]
+    },
+    {
+      "id": "hasselt-xl-field-gpio",
+      "adapter": "gpio",
+      "dry_run": true,
+      "pins": [
+        { "signal_id": "northbound", "color": "red", "pin": 17, "active_high": true },
+        { "signal_id": "northbound", "color": "amber", "pin": 27, "active_high": true },
+        { "signal_id": "northbound", "color": "green", "pin": 22, "active_high": true }
+      ]
+    },
+    {
+      "id": "hasselt-xl-field-plc",
+      "adapter": "plc",
+      "endpoint": "tcp://192.168.20.10:502",
+      "dry_run": true,
+      "registers": [
+        { "signal_id": "northbound", "address": 1000, "red_value": 0, "amber_value": 1, "green_value": 2, "off_value": 3 }
+      ]
+    }
+  ]
+}

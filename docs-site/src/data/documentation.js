@@ -7,19 +7,24 @@ import {
   ClipboardCheck,
   ClipboardList,
   Code2,
+  Cpu,
   Database,
   FileText,
   Gauge,
   GitBranch,
   Network,
   Presentation,
+  RadioTower,
   Route,
   Server,
+  ShieldCheck,
   Target,
   Terminal,
   Users,
   Workflow,
 } from 'lucide-vue-next'
+
+const assetBase = `${import.meta.env.BASE_URL}project-media/`
 
 export const navigationSections = [
   { id: 'overview', label: 'Project overview', icon: BookOpen, keywords: 'problem product scope Hasselt SUMO VROOM' },
@@ -28,6 +33,7 @@ export const navigationSections = [
   { id: 'architecture', label: 'Architecture', icon: Network, keywords: 'docker containers backend frontend redis mysql gateway diagram' },
   { id: 'ai', label: 'SAM AI controller', icon: BrainCircuit, keywords: 'reinforcement learning reward state action DQN D3QN baseline' },
   { id: 'simulation', label: 'Simulation and UI', icon: Route, keywords: 'SUMO Web3D Vue dashboard scenarios mockups vision' },
+  { id: 'production', label: 'Real-light production', icon: ShieldCheck, keywords: 'C++ HAL GPIO PLC NATS fallback hardware traffic lights' },
   { id: 'process', label: 'Sprints and process', icon: Workflow, keywords: 'Jira Confluence scrum sprint review retrospective planning' },
   { id: 'devops', label: 'DevOps and runbook', icon: Terminal, keywords: 'GitHub Actions Docker test deploy commands ports future optimization' },
 ]
@@ -47,6 +53,11 @@ export const headerFacts = [
     label: 'Core comparison',
     value: 'SAM AI vs fixed-time control',
     text: 'Measured through queue length, waiting time, delay, reward, and throughput.',
+  },
+  {
+    label: 'Production extension',
+    value: 'C++ real-light controller',
+    text: 'Prepared with HALs, mocks, NATS message formats, Docker, tests, and fail-safe fallback behavior.',
   },
 ]
 
@@ -239,6 +250,8 @@ export const services = [
   { name: 'frontend', tech: 'Vue.js', role: 'Provides the dashboard for scenarios, simulation control, KPI analysis, logs, and settings.' },
   { name: 'backend', tech: 'FastAPI + Python', role: 'Hosts API routes, authentication, RL endpoints, model loading, and database access.' },
   { name: 'sumo-web3d', tech: 'SUMO + Web3D', role: 'Runs and visualizes the traffic simulation in a browser-friendly 3D environment.' },
+  { name: 'nats', tech: 'NATS', role: 'Provides low-latency production communication between real-light controller nodes.' },
+  { name: 'real-traffic-controller', tech: 'C++17', role: 'Prepares physical traffic-light control through HALs for mocks, GPIO and PLCs.' },
   { name: 'redis-prod', tech: 'Redis', role: 'Stores fast runtime state and supports communication between services.' },
   { name: 'mysql-prod', tech: 'MySQL 8.4', role: 'Persists users, presets, results, and project data used by the backend.' },
 ]
@@ -296,6 +309,77 @@ export const uiWorkflows = [
     text: 'Sprint 3 planning covers AI decisions per timestep, filtering, downloads, export, and reuse of saved simulations.',
     icon: Database,
   },
+]
+
+export const visualAssets = [
+  {
+    title: 'Production architecture',
+    text: 'Final architecture diagram showing gateway, frontend, backend, SUMO-Web3D, Redis, MySQL and container lifecycle.',
+    src: `${assetBase}sprint3-image7.png`,
+    alt: 'VROOM production architecture diagram',
+  },
+  {
+    title: 'Dashboard container stack',
+    text: 'Sprint evidence of the Dockerized dashboard, backend, simulation, Redis, MySQL and gateway services.',
+    src: `${assetBase}sprint2-image7.png`,
+    alt: 'Docker Desktop service list for VROOM production containers',
+  },
+  {
+    title: 'AI training process',
+    text: 'Research visual showing SUMO simulation, dynamic traffic flow generation and Dueling Double DQN evaluation.',
+    src: `${assetBase}sprint3-image6.png`,
+    alt: 'Dueling Double DQN traffic-light training workflow',
+  },
+  {
+    title: 'DQN learning loop',
+    text: 'Paper and presentation visual for state, action, reward, replay memory and target-network learning.',
+    src: `${assetBase}sprint3-image5.png`,
+    alt: 'DQN reinforcement-learning loop with replay memory and target network',
+  },
+  {
+    title: 'Sprint 1 architecture',
+    text: 'Early architecture and technology choices from the first sprint review, before the production diagram was refined.',
+    src: `${assetBase}sprint1-image3.png`,
+    alt: 'Sprint 1 VROOM architecture diagram',
+  },
+  {
+    title: 'Research model sketch',
+    text: 'Research deck image connecting traffic state, DQN agent, action selection and reward feedback.',
+    src: `${assetBase}sprint2-research-image2.png`,
+    alt: 'DQN traffic-light research model sketch',
+  },
+]
+
+export const productionReadiness = [
+  {
+    title: 'C++ controller core',
+    text: 'Real-light control preparation lives in production-real-traffic-lights with deterministic C++17 code, CMake and dependency-free tests.',
+    icon: Cpu,
+  },
+  {
+    title: 'Hardware abstraction',
+    text: 'The controller uses one HAL contract with mock, GPIO and PLC adapters so field hardware can be swapped without rewriting safety logic.',
+    icon: Boxes,
+  },
+  {
+    title: 'NATS communication',
+    text: 'Intersections can exchange heartbeat, state, intent, command and acknowledgement messages over a low-latency NATS bus.',
+    icon: RadioTower,
+  },
+  {
+    title: 'Fail-safe fallback',
+    text: 'When communication disappears, the controller moves to all-red and then continues with a local fixed-time cycle until communication returns.',
+    icon: ShieldCheck,
+  },
+]
+
+export const productionFiles = [
+  { name: 'production-real-traffic-lights/include', description: 'Public HAL, protocol and controller contracts.' },
+  { name: 'production-real-traffic-lights/src', description: 'Controller implementation, logging, GPIO/PLC/mock adapters and CLI entrypoint.' },
+  { name: 'production-real-traffic-lights/tests', description: 'C++ protocol and fallback-controller tests.' },
+  { name: 'production-real-traffic-lights/docs', description: 'Protocol and safety documentation for production review.' },
+  { name: 'docker-compose.production-real.yml', description: 'Full stack with dashboard, backend, SUMO, MySQL, Redis, NATS and real-light controller mocks.' },
+  { name: 'research/SOURCES.md', description: 'Source register for assignment, paper, sprint decks, diagrams and external references.' },
 ]
 
 export const sprintTimeline = [
@@ -372,6 +456,9 @@ export const commands = [
   { cmd: 'make dev', text: 'Start the development stack with Docker Compose.' },
   { cmd: 'make dev-build', text: 'Rebuild and start the development stack.' },
   { cmd: 'make prod', text: 'Start the production-style stack with the Nginx gateway.' },
+  { cmd: 'docker compose -f docker-compose.production-real.yml up --build', text: 'Start the full product stack with NATS and mocked real-light controllers.' },
+  { cmd: 'cmake -S production-real-traffic-lights -B production-real-traffic-lights/build', text: 'Configure the C++ real-light controller build.' },
+  { cmd: 'ctest --test-dir production-real-traffic-lights/build --output-on-failure', text: 'Run the real-light controller protocol and fallback tests.' },
   { cmd: 'make test', text: 'Run backend and frontend tests.' },
   { cmd: 'make train', text: 'Start the local AI training workflow.' },
   { cmd: 'make eval', text: 'Evaluate a trained model against stored or generated results.' },
@@ -399,6 +486,11 @@ export const pipelines = [
     text: 'Publishes this documentation site from the docs-site build artifact.',
     icon: FileText,
   },
+  {
+    title: 'Real-light production stack',
+    text: 'The production-real compose file adds NATS and mocked C++ controller nodes to the normal dashboard/backend/SUMO deployment.',
+    icon: RadioTower,
+  },
 ]
 
 export const ports = [
@@ -410,6 +502,8 @@ export const ports = [
   { service: 'Simulator websocket', url: 'ws://localhost:5678' },
   { service: 'MySQL', url: 'localhost:3310 -> 3306' },
   { service: 'Redis', url: 'localhost:6379' },
+  { service: 'NATS', url: 'localhost:4222' },
+  { service: 'NATS monitoring', url: 'http://localhost:8222' },
 ]
 
 export const futureOptimization = [
@@ -444,6 +538,7 @@ export const sourceNotes = [
   'Sprint 3 final presentation',
   'Architecture diagram',
   'Repository implementation',
+  'Production real-light controller module',
 ]
 
 export const assetCards = [

@@ -21,6 +21,9 @@
     <h4>User-facing workflows</h4>
     <IconCardGrid :items="uiWorkflows" />
 
+    <h4>Project visuals from the sprint evidence</h4>
+    <VisualGallery :assets="visualAssets" />
+
     <h4>Vision and sensor data</h4>
     <p>
       The assignment explicitly included experiments with perfect simulated sensors and noisy vision-based input.
@@ -41,5 +44,6 @@
 <script setup>
 import SectionHeading from '../SectionHeading.vue'
 import IconCardGrid from '../IconCardGrid.vue'
-import { simulationFlow, uiWorkflows } from '../../data/documentation'
+import VisualGallery from '../VisualGallery.vue'
+import { simulationFlow, uiWorkflows, visualAssets } from '../../data/documentation'
 </script>

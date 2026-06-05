@@ -1,0 +1,168 @@
+services:
+  gateway-prod:
+    image: nginx:alpine
+    container_name: gateway-prod-real
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
+      sumo-web3d:
+        condition: service_healthy
+
+  mysql-prod:
+    image: mysql:8.4
+    container_name: mysql-prod-real
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mydatabase}
+      MYSQL_USER: ${MYSQL_USER:-myuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mypassword}
+      TZ: Europe/Brussels
+    ports:
+      - "${MYSQL_PORT:-3310}:3306"
+    volumes:
+      - mysql_prod_real_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER:-myuser}", "-p${MYSQL_PASSWORD:-mypassword}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-prod:
+    image: redis:alpine
+    container_name: redis-prod-real
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: nats-real
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "${NATS_PORT:-4222}:4222"
+      - "${NATS_MONITOR_PORT:-8222}:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: vroom-backend:prod
+    environment:
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-myuser}:${MYSQL_PASSWORD:-mypassword}@mysql-prod:3306/${MYSQL_DATABASE:-mydatabase}
+      REDIS_HOST: redis-prod
+      REDIS_PORT: 6379
+      VROOM_NATS_URL: nats://nats:4222
+      TZ: Europe/Brussels
+      OMP_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      NUMEXPR_NUM_THREADS: 1
+    depends_on:
+      mysql-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      default:
+        aliases:
+          - backend
+
+  sumo-web3d:
+    build:
+      context: ./sumo-web3d
+      dockerfile: Dockerfile.prod
+    image: vroom-sumo-web3d:prod
+    container_name: sumo-web3d-prod-real
+    environment:
+      SUMO_HOME: /usr/share/sumo
+      SUMO_SCENARIO: /app/scenarios/hasselt_xl/osm.sumocfg
+      REDIS_HOST: redis-prod
+      REDIS_PORT: 6379
+      VITE_BASE_URL: /map/
+      ENV: production
+      TZ: Europe/Brussels
+    volumes:
+      - ./backend/scenarios:/app/scenarios:ro
+      - ./backend/rl/models:/app/rl/models
+      - rl_real_data:/app/rl_data
+    depends_on:
+      redis-prod:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/scenarios"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    networks:
+      default:
+        aliases:
+          - sumo-web3d
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    image: vroom-frontend:prod
+    depends_on:
+      - backend
+      - sumo-web3d
+    networks:
+      default:
+        aliases:
+          - frontend
+
+  real-traffic-controller-a:
+    build:
+      context: ./production-real-traffic-lights
+      dockerfile: docker/Dockerfile
+    image: vroom-real-traffic-controller:prod
+    env_file:
+      - ./production-real-traffic-lights/.env.example
+    environment:
+      VROOM_INTERSECTION_ID: hasselt-xl-a
+      VROOM_NATS_URL: nats://nats:4222
+      VROOM_HARDWARE_ADAPTER: mock
+    depends_on:
+      nats:
+        condition: service_healthy
+
+  real-traffic-controller-b:
+    image: vroom-real-traffic-controller:prod
+    env_file:
+      - ./production-real-traffic-lights/.env.example
+    environment:
+      VROOM_INTERSECTION_ID: hasselt-xl-b
+      VROOM_NATS_URL: nats://nats:4222
+      VROOM_HARDWARE_ADAPTER: mock
+    depends_on:
+      nats:
+        condition: service_healthy
+      real-traffic-controller-a:
+        condition: service_started
+
+volumes:
+  mysql_prod_real_data:
+  rl_real_data:

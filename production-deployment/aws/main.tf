@@ -167,6 +167,29 @@ resource "aws_security_group" "ecs_tasks" {
 }
 
 # --- DATABASE (RDS MySQL) ---
+variable "db_admin_user" {
+  type      = string
+  default   = "vroomadmin"
+  sensitive = true
+}
+
+variable "db_admin_password" {
+  type      = string
+  sensitive = true
+}
+
+resource "aws_secretsmanager_secret" "db_credentials" {
+  name = "${var.project_name}-db-secret"
+}
+
+resource "aws_secretsmanager_secret_version" "db_credentials" {
+  secret_id     = aws_secretsmanager_secret.db_credentials.id
+  secret_string = jsonencode({
+    username = var.db_admin_user
+    password = var.db_admin_password
+  })
+}
+
 resource "aws_db_subnet_group" "db" {
   name       = "${var.project_name}-db-subnet-group"
   subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
@@ -190,8 +213,8 @@ resource "aws_db_instance" "mysql" {
   engine_version         = "8.0"
   instance_class         = "db.t4g.micro"
   db_name                = "mydatabase"
-  username               = "myuser"
-  password               = "mypassword"
+  username               = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["username"]
+  password               = jsondecode(aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
   db_subnet_group_name   = aws_db_subnet_group.db.name
   vpc_security_group_ids = [aws_security_group.db.id]
   skip_final_snapshot    = true

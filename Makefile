@@ -19,6 +19,10 @@ setup:
 	docker compose build --no-cache
 	docker compose run --rm backend python -m app.initial_setup
 
+local-setup:
+	@echo "🚀 Setting up local database and environment outside Docker..."
+	cd backend && python -m app.initial_setup
+
 dev:
 	@echo "🛠️ Stopping any conflicting containers..."
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true

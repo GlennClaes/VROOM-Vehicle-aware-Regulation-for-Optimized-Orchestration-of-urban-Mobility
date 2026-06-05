@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vroom-redis-service
+spec:
+  selector:
+    app: vroom-redis
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vroom-backend-service
+spec:
+  selector:
+    app: vroom-backend
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vroom-sumo-web3d-service
+spec:
+  selector:
+    app: vroom-sumo-web3d
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+    targetPort: 5000
+  - name: ws
+    protocol: TCP
+    port: 5678
+    targetPort: 5678
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vroom-frontend-service
+spec:
+  selector:
+    app: vroom-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vroom-nats-edge-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: vroom-nats
+  ports:
+  - name: nats-client
+    protocol: TCP
+    port: 4222
+    targetPort: 4222
+  - name: nats-monitor
+    protocol: TCP
+    port: 8222
+    targetPort: 8222

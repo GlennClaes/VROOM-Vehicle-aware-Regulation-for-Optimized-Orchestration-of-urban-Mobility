@@ -44,3 +44,15 @@
     </gui_only>
 
 </configuration>
+-->
+
+<statistics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/statistic_file.xsd">
+    <vehicles loaded="2408" inserted="2024" running="767" waiting="1"/>
+    <teleports total="2" jam="0" yield="0" wrongLane="2"/>
+    <safety collisions="0" emergencyStops="2"/>
+    <persons loaded="0" running="0" jammed="0"/>
+    <vehicleTripStatistics routeLength="3437.30" speed="10.42" duration="327.19" waitingTime="56.97" timeLoss="109.96" departDelay="0.47" departDelayWaiting="-1.00" totalTravelTime="411273.00" totalDepartDelay="593.00"/>
+    <pedestrianStatistics number="0" routeLength="0.00" duration="0.00" timeLoss="0.00"/>
+    <rideStatistics number="0"/>
+    <transportStatistics number="0"/>
+</statistics>

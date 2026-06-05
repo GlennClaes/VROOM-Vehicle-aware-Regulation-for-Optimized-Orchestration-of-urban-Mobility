@@ -442,7 +442,7 @@ export default class Sumo3D {
                 this.fpsFrameCount = 0;
                 this.fpsLastTime = this.frameTime;
                 
-                if (fps < 15 && !this.qualityDegraded) {
+                if (fps < 30 && !this.qualityDegraded) {
                     this.lowFpsCount++;
                     if (this.lowFpsCount >= 3) {
                         this.degradeQuality();
@@ -463,11 +463,7 @@ export default class Sumo3D {
 
     private degradeQuality() {
         this.qualityDegraded = true;
-        console.warn("[PerformanceGuard] Low FPS detected (<15 FPS) for 3s. Automatically degrading WebGL quality to restore performance.");
-        
-        // 1. Drop pixel ratio to 0.75 for fast rendering
-        this.renderer.setPixelRatio(0.75);
-        this.postprocessing.onResize(this.parentElement.clientWidth, this.parentElement.clientHeight, 0.75);
+        console.warn("[PerformanceGuard] Low FPS detected (<30 FPS) for 3s. Automatically degrading background geometry to restore performance.");
         
         // 2. Hide buildings and water meshes to reduce draw calls
         this.scene.traverse((obj) => {
@@ -499,11 +495,22 @@ export default class Sumo3D {
 
         // Lower decay factor slightly (e.g. 8.0) for a smoother glide, using velocity prediction
         const lerpFactor = 1.0 - Math.exp(-8.0 * deltaTime);
+        const cameraPos = this.camera.position;
+        const maxDistSq = this.qualityDegraded ? 350 * 350 : 800 * 800;
 
         for (const id in this.vehicles) {
             const v = this.vehicles[id];
             const vAny = v as any;
             if (vAny.targetPos) {
+                // Distance based culling/LOD to drastically reduce draw calls for far-away vehicles
+                const distToCamSq = v.mesh.position.distanceToSquared(cameraPos);
+                if (distToCamSq > maxDistSq) {
+                    v.mesh.visible = false;
+                    continue;
+                } else if (v.vehicleInfo) {
+                    v.mesh.visible = !v.vehicleInfo.vehicle;
+                }
+
                 const distSq = v.mesh.position.distanceToSquared(vAny.targetPos);
                 
                 // Snap if it's a teleport or huge jump

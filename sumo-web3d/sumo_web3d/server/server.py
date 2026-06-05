@@ -8,6 +8,25 @@ import websockets
 from aiohttp import web
 
 from .scenarios import Scenario, load_scenarios_file, to_kebab_case
+import sys
+
+# Compile C++ prediction engine on server startup
+try:
+    print("[SumoWeb3D] Compiling C++ prediction engine...", flush=True)
+    try:
+        from .rl_core.compile_cpp import compile_lib
+    except ImportError:
+        try:
+            from rl_core.compile_cpp import compile_lib
+        except ImportError:
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), "rl_core"))
+            from compile_cpp import compile_lib
+    compile_lib()
+except Exception as e:
+    print(f"[SumoWeb3D] C++ prediction engine compilation skipped/failed: {e}", flush=True)
+
 from .routes import setup_http_server
 from .simulation import start_sumo_executable
 from .websocket_handler import (

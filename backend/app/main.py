@@ -15,6 +15,14 @@ nats_monitor = NatsMonitorService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 0. Compile C++ prediction engine
+    try:
+        print("[Startup] Compiling C++ prediction engine...", flush=True)
+        from rl.core.compile_cpp import compile_lib
+        compile_lib()
+    except Exception as e:
+        print(f"[Startup] Failed to compile C++ prediction engine: {e}", flush=True)
+
     # 1. Initialize Database
     create_db_and_tables()
     

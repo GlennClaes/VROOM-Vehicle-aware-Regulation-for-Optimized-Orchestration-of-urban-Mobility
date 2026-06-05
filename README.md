@@ -137,6 +137,7 @@ The module is production-oriented preparation, not a certified road-side control
 |   |-- rl/                  # DQN agent, SUMO environment, training and evaluation scripts
 |   |-- scenarios/hasselt_xl # SUMO network, route files, profiles and generated outputs
 |   `-- Dockerfile.*         # dev, prod and training images
+|-- kubernetes/              # Production scale manifests (deployments, services, ingress)
 |-- dashboard/               # Top-level dashboard index; implementation remains in frontend/
 |-- frontend/                # Vue dashboard, Pinia stores, Vitest tests and UI components
 |-- simulation/              # Top-level simulation index; implementation remains in sumo-web3d/

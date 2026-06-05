@@ -15,7 +15,6 @@ provider "azurerm" {
   features {}
 }
 
-# --- VARIABLES ---
 variable "location" {
   type    = string
   default = "westeurope" # Close to Hasselt / Belgium
@@ -26,10 +25,50 @@ variable "project_name" {
   default = "vroom-production"
 }
 
+variable "db_admin_user" {
+  type      = string
+  default   = "vroomadmin"
+  sensitive = true
+}
+
+variable "db_admin_password" {
+  type      = string
+  sensitive = true
+}
+
 # --- RESOURCE GROUP ---
 resource "azurerm_resource_group" "rg" {
   name     = "${var.project_name}-rg"
   location = var.location
+}
+
+# --- AZURE KEY VAULT (Secure Secrets Storage) ---
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_key_vault" "kv" {
+  name                        = "${var.project_name}-kv"
+  location                    = azurerm_resource_group.rg.location
+  resource_group_name         = azurerm_resource_group.rg.name
+  enabled_for_disk_encryption = true
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+  sku_name                    = "standard"
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = [
+      "Get", "List", "Set", "Delete", "Purge", "Recover"
+    ]
+  }
+}
+
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "db-admin-password"
+  value        = var.db_admin_password
+  key_vault_id = azurerm_key_vault.kv.id
 }
 
 # --- VIRTUAL NETWORK & SUBNETS ---
@@ -54,6 +93,7 @@ resource "azurerm_subnet" "database" {
   address_prefixes     = ["10.0.4.0/24"]
   delegation {
     name = "fs"
+    group_name = "Microsoft.DBforMySQL/flexibleServers"
     service_delegation {
       name    = "Microsoft.DBforMySQL/flexibleServers"
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
@@ -66,8 +106,8 @@ resource "azurerm_mysql_flexible_server" "mysql" {
   name                   = "${var.project_name}-mysql"
   resource_group_name    = azurerm_resource_group.rg.name
   location               = azurerm_resource_group.rg.location
-  administrator_login    = "myuser"
-  administrator_password = "mypassword"
+  administrator_login    = var.db_admin_user
+  administrator_password = azurerm_key_vault_secret.db_password.value
   backup_retention_days  = 7
   delegated_subnet_id    = azurerm_subnet.database.id
   sku_name               = "B_Standard_B1ms"

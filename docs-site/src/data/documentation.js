@@ -309,6 +309,11 @@ export const uiWorkflows = [
     text: 'Sprint 3 planning covers AI decisions per timestep, filtering, downloads, export, and reuse of saved simulations.',
     icon: Database,
   },
+  {
+    title: 'Real-time Congestion & FCD Integration',
+    text: 'Displays live bottlenecks and congestion. Integrates loop detectors (POST /state) and Floating Car GPS Data (POST /fcd). The WebGL map highlights jammed streets in bright red once speeds drop below 15 km/u, emphasizing high-congestion areas.',
+    icon: Activity,
+  },
 ]
 
 export const visualAssets = [
@@ -370,6 +375,16 @@ export const productionReadiness = [
     title: 'Fail-safe fallback',
     text: 'When communication disappears, the controller moves to all-red and then continues with a local fixed-time cycle until communication returns.',
     icon: ShieldCheck,
+  },
+  {
+    title: 'Modbus TCP Client (PLC)',
+    text: 'The C++ controller implements a socket-based Modbus TCP client (FC6) to write state commands directly to physical PLC registers.',
+    icon: Database,
+  },
+  {
+    title: 'Cabinet Testing Tool',
+    text: 'Includes cabinet_tester.py, a CLI script that allows field engineers to directly test GPIO relays, Modbus registers, or NATS commands.',
+    icon: Terminal,
   },
 ]
 

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libvroom_real_controller.a CMakeFiles/vroom_real_controller.dir/src/gpio_hardware_adapter.cpp.o CMakeFiles/vroom_real_controller.dir/src/intersection_controller.cpp.o CMakeFiles/vroom_real_controller.dir/src/logger.cpp.o CMakeFiles/vroom_real_controller.dir/src/message_protocol.cpp.o CMakeFiles/vroom_real_controller.dir/src/mock_hardware_adapter.cpp.o CMakeFiles/vroom_real_controller.dir/src/plc_hardware_adapter.cpp.o CMakeFiles/vroom_real_controller.dir/src/types.cpp.o
+/usr/bin/ranlib libvroom_real_controller.a

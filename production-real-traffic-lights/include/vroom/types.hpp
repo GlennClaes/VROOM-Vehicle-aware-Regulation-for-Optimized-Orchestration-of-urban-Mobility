@@ -47,6 +47,14 @@ struct ControllerConfig {
     std::uint32_t communication_timeout_ms = 1500;
     std::uint32_t all_red_duration_ms = 1500;
     std::uint32_t fixed_phase_duration_ms = 12000;
+    std::uint32_t min_green_duration_ms = 6000;
+    std::uint32_t amber_duration_ms = 3000;
+    std::string watchdog_path;
+    std::string ca_cert_path;
+    std::string client_cert_path;
+    std::string client_key_path;
+    bool conflict_monitor_enabled = true;
+    std::string failed_bulb_id;
     std::vector<SignalHead> signal_heads;
 };
 

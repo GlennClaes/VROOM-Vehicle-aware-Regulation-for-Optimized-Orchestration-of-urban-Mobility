@@ -57,6 +57,8 @@ std::string to_string(MessageType type) {
         return "COMMAND";
     case MessageType::Ack:
         return "ACK";
+    case MessageType::Priority:
+        return "PRIORITY";
     }
     return "UNKNOWN";
 }
@@ -77,6 +79,9 @@ std::optional<MessageType> message_type_from_string(const std::string& value) {
     if (value == "ACK") {
         return MessageType::Ack;
     }
+    if (value == "PRIORITY") {
+        return MessageType::Priority;
+    }
     return std::nullopt;
 }
 
@@ -91,14 +96,17 @@ std::string encode_message(const TrafficMessage& message) {
            << message.phase << '|'
            << message.health << '|'
            << message.ttl_ms;
+    if (message.glosa_time_to_change_ms.has_value()) {
+        stream << '|' << *message.glosa_time_to_change_ms;
+    }
     return stream.str();
 }
 
 std::optional<TrafficMessage> decode_message(const std::string& line, std::string* error) {
     const auto parts = split(line, '|');
-    if (parts.size() != 9) {
+    if (parts.size() != 9 && parts.size() != 10) {
         if (error != nullptr) {
-            *error = "expected 9 protocol fields";
+            *error = "expected 9 or 10 protocol fields";
         }
         return std::nullopt;
     }
@@ -147,6 +155,13 @@ std::optional<TrafficMessage> decode_message(const std::string& line, std::strin
     message.phase = parts[6];
     message.health = parts[7];
     message.ttl_ms = *ttl_ms;
+
+    if (parts.size() == 10) {
+        const auto glosa = parse_u32(parts[9]);
+        if (glosa.has_value()) {
+            message.glosa_time_to_change_ms = *glosa;
+        }
+    }
     return message;
 }
 

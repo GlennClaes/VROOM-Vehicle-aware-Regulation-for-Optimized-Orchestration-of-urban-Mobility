@@ -9,7 +9,7 @@ Reason: NATS provides low-latency pub/sub, request/reply patterns, simple cluste
 ## Wire Format
 
 ```text
-VROOM|1|TYPE|intersection_id|sequence|timestamp_ms|phase|health|ttl_ms
+VROOM|1|TYPE|intersection_id|sequence|timestamp_ms|phase|health|ttl_ms|[glosa_time_to_change_ms]
 ```
 
 | Field | Example | Meaning |
@@ -23,11 +23,18 @@ VROOM|1|TYPE|intersection_id|sequence|timestamp_ms|phase|health|ttl_ms
 | `phase` | `NS_GREEN` | Current, intended or commanded phase. |
 | `health` | `ok` | Sender health state or command status. |
 | `ttl_ms` | `1000` | Time-to-live for the message. |
+| `glosa_time_to_change_ms` | `4500` | (Optional, Version 1.1) Green Light Optimal Speed Advisory. Milliseconds remaining until the current state changes. |
 
-Example:
+Example (Standard 9-field format):
 
 ```text
 VROOM|1|STATE|hasselt-xl-a|42|1717423105123|NS_GREEN|ok|1000
+```
+
+Example (Extended 10-field GLOSA format):
+
+```text
+VROOM|1|HEARTBEAT|hasselt-xl-a|43|1717423105623|NS_GREEN|ok|1000|4500
 ```
 
 ## Suggested NATS Subjects

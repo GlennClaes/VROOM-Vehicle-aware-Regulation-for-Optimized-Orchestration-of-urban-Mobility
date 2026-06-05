@@ -11,7 +11,8 @@ enum class MessageType {
     State,
     Intent,
     Command,
-    Ack
+    Ack,
+    Priority
 };
 
 struct TrafficMessage {
@@ -22,6 +23,7 @@ struct TrafficMessage {
     std::string phase = "ALL_RED";
     std::string health = "ok";
     std::uint32_t ttl_ms = 1000;
+    std::optional<std::uint32_t> glosa_time_to_change_ms;
 };
 
 std::string to_string(MessageType type);

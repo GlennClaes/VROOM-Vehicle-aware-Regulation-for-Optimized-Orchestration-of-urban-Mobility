@@ -93,7 +93,7 @@ def run_episode(env: SumoIntersectionEnv, agent: DQNAgent) -> dict:
 
 # ── DQN evaluatie ─────────────────────────────────────────────────────────────
 
-def evaluate_dqn(model_path: str, n_episodes: int = 5) -> dict:
+def evaluate_dqn(model_path: str, n_episodes: int = 5, use_gui: bool = False) -> dict:
     """Evalueert het DQN model over meerdere episodes."""
 
     print(f"\n{'='*60}")
@@ -101,7 +101,7 @@ def evaluate_dqn(model_path: str, n_episodes: int = 5) -> dict:
     print(f"Episodes: {n_episodes}")
     print(f"{'='*60}")
 
-    env   = SumoIntersectionEnv(sumocfg=str(SUMOCFG), use_gui=False, port=8815)
+    env   = SumoIntersectionEnv(sumocfg=str(SUMOCFG), use_gui=use_gui, port=8815)
     # Gebruik de dimensies uit de environment
     state_dim  = env.observation_space.shape[0]
     action_dim = env.action_space.n
@@ -189,6 +189,7 @@ if __name__ == "__main__":
     p.add_argument("--model",    type=str,  default=None)
     p.add_argument("--episodes", type=int,  default=5)
     p.add_argument("--compare",  action="store_true")
+    p.add_argument("--gui",      action="store_true", help="Launch evaluation with SUMO GUI")
     args = p.parse_args()
 
     model_path = args.model or find_best_model()
@@ -196,6 +197,6 @@ if __name__ == "__main__":
         print("FOUT: Geen model gevonden.")
         sys.exit(1)
 
-    summary = evaluate_dqn(model_path, n_episodes=args.episodes)
+    summary = evaluate_dqn(model_path, n_episodes=args.episodes, use_gui=args.gui)
     if args.compare:
         compare_with_baseline(summary)

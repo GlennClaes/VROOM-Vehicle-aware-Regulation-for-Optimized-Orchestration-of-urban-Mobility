@@ -629,6 +629,24 @@ class SumoIntersectionEnv(gym.Env):
                 + (avg_speed / MAX_SPEED) * 1.5
             )
 
+            # Heavy penalty for halting emergency/transit vehicles to shape priority behaviors
+            priority_penalty = 0.0
+            for lane in inc_lanes:
+                try:
+                    veh_ids = traci.lane.getLastStepVehicleIDs(lane)
+                    for vid in veh_ids:
+                        v_class = traci.vehicle.getVehicleClass(vid)
+                        if v_class in ["emergency", "bus"]:
+                            speed = traci.vehicle.getSpeed(vid)
+                            wait_t = traci.vehicle.getWaitingTime(vid)
+                            if speed < 1.0 or wait_t > 0:
+                                # High penalty factor for emergency vehicles, moderate for public buses
+                                factor = 12.0 if v_class == "emergency" else 3.5
+                                priority_penalty += (wait_t * 0.15 + 6.0) * factor
+                except:
+                    pass
+            reward -= priority_penalty
+
             if info.get("just_switched", False):
                 penalty = 3.0 if q_total < 2 else 1.0
                 reward -= penalty

@@ -7,6 +7,11 @@ from app.core.cors import add_cors
 from app.api.routes import rl
 from app.api.routes import simulations
 from app.api.routes import presets
+from app.api.routes import real_traffic
+from app.services.nats_monitor import NatsMonitorService
+
+# Instantiate background NATS monitor
+nats_monitor = NatsMonitorService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +33,20 @@ async def lifespan(app: FastAPI):
 
     threading.Thread(target=_preload_rl, daemon=True).start()
     
+    # 3. Start NATS Telemetry Monitor background service
+    try:
+        await nats_monitor.start()
+        print("[Startup] NatsMonitorService started successfully.")
+    except Exception as e:
+        print(f"[Startup] NatsMonitorService start failed: {e}")
+    
     yield
+    
+    # Shutdown NATS monitor
+    try:
+        await nats_monitor.stop()
+    except:
+        pass
 
 app = FastAPI(title="Universal Traffic AI API", lifespan=lifespan)
 
@@ -55,3 +73,5 @@ app.include_router(users.router)
 app.include_router(rl.router)
 app.include_router(simulations.router)
 app.include_router(presets.router)
+app.include_router(real_traffic.router)
+

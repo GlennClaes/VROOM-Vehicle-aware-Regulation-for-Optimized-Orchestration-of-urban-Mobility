@@ -1,0 +1,56 @@
+Start testing: Jun 05 12:27 UTC
+----------------------------------------------------------
+1/2 Testing: message_protocol
+1/2 Test: message_protocol
+Command: "/src/build/test_protocol"
+Directory: /src/build
+"message_protocol" start time: Jun 05 12:27 UTC
+Output:
+----------------------------------------------------------
+message protocol tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"message_protocol" end time: Jun 05 12:27 UTC
+"message_protocol" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: intersection_controller
+2/2 Test: intersection_controller
+Command: "/src/build/test_controller"
+Directory: /src/build
+"intersection_controller" start time: Jun 05 12:27 UTC
+Output:
+----------------------------------------------------------
+2026-06-05T12:27:47Z [INFO] Mock hardware adapter initialized
+2026-06-05T12:27:47Z [INFO] controller started for test-junction
+2026-06-05T12:27:47Z [INFO] mock signal command: north -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: south -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: east -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: west -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: north -> green
+2026-06-05T12:27:47Z [INFO] mock signal command: south -> green
+2026-06-05T12:27:47Z [INFO] mock signal command: east -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: west -> red
+2026-06-05T12:27:47Z [WARN] communication lost for test-junction; entering all-red fallback
+2026-06-05T12:27:47Z [INFO] mock signal command: north -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: south -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: east -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: west -> red
+2026-06-05T12:27:47Z [WARN] fallback fixed-cycle phase NS_GREEN
+2026-06-05T12:27:47Z [INFO] mock signal command: north -> green
+2026-06-05T12:27:47Z [INFO] mock signal command: south -> green
+2026-06-05T12:27:47Z [INFO] mock signal command: east -> red
+2026-06-05T12:27:47Z [INFO] mock signal command: west -> red
+2026-06-05T12:27:47Z [INFO] neighbor communication restored from neighbor-b
+intersection controller tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"intersection_controller" end time: Jun 05 12:27 UTC
+"intersection_controller" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jun 05 12:27 UTC

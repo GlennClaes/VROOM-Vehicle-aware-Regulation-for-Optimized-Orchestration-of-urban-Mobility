@@ -1,22 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-05-27 19:52:03 by Eclipse SUMO sumo Version 1.12.0
-<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+<!-- generated on 2026-06-05T14:52:08.361827+01:00 by Eclipse SUMO GUI 1.26.0
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
-        <net-file value="/app/scenarios/hasselt_xl/osm.net.xml.gz"/>
-        <route-files value="/app/scenarios/hasselt_xl/osm.rush_hour.trips.xml"/>
-        <additional-files value="/app/scenarios/hasselt_xl/osm.poly.xml.gz,/app/scenarios/hasselt_xl/output.add.xml"/>
+        <net-file value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\osm.net.xml.gz"/>
+        <route-files value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\osm.rush_hour.trips.xml"/>
+        <additional-files value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\osm.poly.xml.gz,C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\output.add.xml"/>
     </input>
 
     <output>
-        <tripinfo-output value="/app/scenarios/hasselt_xl/tripinfos_rush_hour.xml"/>
-        <statistic-output value="/app/scenarios/hasselt_xl/stats_rush_hour.xml"/>
+        <tripinfo-output value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\tripinfos_rush_hour.xml"/>
+        <statistic-output value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\stats_rush_hour.xml"/>
     </output>
-
-    <time>
-        <step-length value="1.0"/>
-    </time>
 
     <processing>
         <ignore-route-errors value="true"/>
@@ -30,17 +26,37 @@
 
     <report>
         <verbose value="true"/>
+        <no-warnings value="true"/>
         <duration-log.statistics value="true"/>
         <no-step-log value="true"/>
     </report>
 
     <traci_server>
-        <remote-port value="34087"/>
+        <remote-port value="8815"/>
     </traci_server>
 
+    <random_number>
+        <random value="true"/>
+    </random_number>
+
     <gui_only>
-        <gui-settings-file value="/app/scenarios/hasselt_xl/osm.view.xml"/>
-        <tracker-interval value="1.0"/>
+        <gui-settings-file value="C:\Projecten\VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility\backend\scenarios\hasselt_xl\osm.view.xml"/>
+        <quit-on-end value="true"/>
+        <start value="true"/>
     </gui_only>
 
-</configuration>
+</sumoConfiguration>
+-->
+
+<statistics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/statistic_file.xsd">
+    <performance clockBegin="73274.69" clockEnd="73625.72" clockDuration="351.03" traciDuration="238.40" realTimeFactor="10.26" vehicleUpdatesPerSecond="9024.00" personUpdatesPerSecond="0.00" begin="0.00" end="3600.00" duration="3600.00"/>
+    <vehicles loaded="7200" inserted="7190" running="1355" waiting="9"/>
+    <teleports total="64" jam="28" yield="27" wrongLane="9"/>
+    <safety collisions="0" emergencyStops="3" emergencyBraking="4"/>
+    <persons loaded="0" running="0" jammed="0"/>
+    <personTeleports total="0" abortWait="0" wrongDest="0"/>
+    <vehicleTripStatistics count="5835" routeLength="3680.25" speed="10.51" duration="369.31" waitingTime="78.16" timeLoss="138.78" departDelay="0.61" departDelayWaiting="-1.00" totalTravelTime="2154920.00" totalDepartDelay="3577.50"/>
+    <pedestrianStatistics number="0" routeLength="0.00" duration="0.00" timeLoss="0.00"/>
+    <rideStatistics number="0"/>
+    <transportStatistics number="0"/>
+</statistics>

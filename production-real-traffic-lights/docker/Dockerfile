@@ -11,7 +11,8 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
 
 FROM alpine:3.20
 
-RUN adduser -D -h /app vroom
+RUN apk add --no-cache libstdc++ libgcc \
+    && adduser -D -h /app vroom
 
 WORKDIR /app
 COPY --from=build /src/build/vroom-real-controller /usr/local/bin/vroom-real-controller

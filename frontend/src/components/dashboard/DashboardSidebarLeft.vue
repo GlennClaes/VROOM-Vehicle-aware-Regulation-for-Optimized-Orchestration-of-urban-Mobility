@@ -5,6 +5,7 @@
     <IntervalCard />
     <ControlsCard />
     <LocationDetailsCard />
+    <CabinetTelemetry />
   </div>
 </template>
 
@@ -14,7 +15,9 @@ import StrategyCard from './DashboardSidebarLeft/StrategyCard.vue'
 import IntervalCard from './DashboardSidebarLeft/IntervalCard.vue'
 import ControlsCard from './DashboardSidebarLeft/ControlsCard.vue'
 import LocationDetailsCard from './DashboardSidebarLeft/LocationDetailsCard.vue'
+import CabinetTelemetry from './CabinetTelemetry.vue'
 </script>
+
 
 <style scoped>
 .dashboard-sidebar-left {

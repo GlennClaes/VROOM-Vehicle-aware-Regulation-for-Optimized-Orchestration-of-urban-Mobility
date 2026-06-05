@@ -18,9 +18,11 @@
           :disabled="hasUserStarted"
         >
           <option disabled value="">Kies een scenario...</option>
-          <option v-for="s in availableScenarios" :key="s.kebabCase" :value="s.kebabCase">
-            {{ s.displayName }}
-          </option>
+          <optgroup v-for="(scenarios, city) in scenariosByCity" :key="city" :label="city">
+            <option v-for="s in scenarios" :key="s.kebabCase" :value="s.kebabCase">
+              {{ s.displayName }}
+            </option>
+          </optgroup>
         </select>
         <div 
           v-if="!selectedScenario && !loadingScenarios" 
@@ -128,6 +130,18 @@ const newPresetName = ref('')
 const isCreatingPreset = ref(false)
 const isConfirmingDelete = ref(false)
 const newPresetInput = ref(null)
+
+const scenariosByCity = computed(() => {
+  const groups = {}
+  availableScenarios.value.forEach(s => {
+    const city = s.city || 'Hasselt'
+    if (!groups[city]) {
+      groups[city] = []
+    }
+    groups[city].push(s)
+  })
+  return groups
+})
 
 
 watch(showNewPresetForm, (val) => {

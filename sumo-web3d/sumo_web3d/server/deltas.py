@@ -5,19 +5,13 @@ import math
 
 def round_vehicles(vehicles):
     """Round values for vehicles to reduce data size. Mutates vehicles."""
+    _round = round
+    _int = int
     for v in vehicles.values():
-        v['x'] = round(v['x'], 2)
-        v['y'] = round(v['y'], 2)
-        v['speed'] = int(round(v['speed']))
-        v['angle'] = int(round(v['angle']))
-
-
-def safe_isnan(val):
-    """math.isnan only works on floats.
-
-    This wrapper returns False for non-number non-nan inputs
-    """
-    return type(val) == float and math.isnan(val)
+        v['x'] = _round(v['x'], 2)
+        v['y'] = _round(v['y'], 2)
+        v['speed'] = _int(_round(v['speed']))
+        v['angle'] = _int(_round(v['angle']))
 
 
 def diff(before, after):
@@ -25,37 +19,43 @@ def diff(before, after):
 
     We assume that no keys are deleted.
     """
-    return {
-        k: v
-        for k, v in after.items()
-        if before.get(k) != v and not safe_isnan(v)
-    }
+    d = {}
+    _type = type
+    _isnan = math.isnan
+    _float = float
+    for k, v in after.items():
+        bv = before.get(k)
+        if bv != v:
+            if _type(v) is _float and _isnan(v):
+                continue
+            d[k] = v
+    return d
 
 
 def diff_dicts(before, after):
     """Calculate a diff between two dicts.
 
-    Returns a tuple:
-        (creation dict, update dict, deleted keys)
-
-    Where (update dict) is a dict of diffs between old & new values for the same key
-    and (creation dict) is a dict of objects that were added to after
-    and (deleted keys) is a list of keys that were removed between before and after.
-
-    If a before[k] == after[k], then k will not appear in the update dict.
+    Returns a dict with:
+        creations: dict of objects that were added
+        updates: dict of diffs for modified objects
+        removals: list of deleted keys
     """
+    before_keys = before.keys()
+    after_keys = after.keys()
+    
+    deleted_keys = list(before_keys - after_keys)
+    
     creations = {}
     update = {}
-    deleted_keys = []
-    for k in before.keys():
-        if k not in after.keys():
-            deleted_keys.append(k)
-
+    
     for k, v in after.items():
         if k in before:
-            d = diff(before[k], v)
-            if len(d):
-                update[k] = d
+            before_val = before[k]
+            # Fast-path: if the dictionaries are identical, skip calling diff
+            if before_val != v:
+                d = diff(before_val, v)
+                if d:
+                    update[k] = d
         else:
             creations[k] = v
 

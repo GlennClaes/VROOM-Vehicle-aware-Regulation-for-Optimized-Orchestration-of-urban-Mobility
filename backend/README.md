@@ -10,6 +10,8 @@ The backend contains the HTTP API, authentication, persistence layer and reinfor
 | API routes | `app/api/routes/` | Auth, users, presets, simulation results and RL endpoints. |
 | Database layer | `app/db/` | Session setup and SQLModel models. |
 | Schemas | `app/schemas/` | Pydantic request/response models. |
+| Unified Domain | `rl/core/vroom_architecture.py` | OOP domain abstractions (City, Intersection, TrafficLight, CommunicationManager, MetricsCollector). |
+| C++ Prediction Engine | `rl/core/prediction_engine.cpp` | Compiled C++ flow prediction, sigmoidal spillback, and green wave offsets. |
 | RL environment | `rl/sumo_env.py` | SUMO/Gymnasium environment with a 48-dimensional observation space. |
 | DQN agent | `rl/dqn_agent.py` | PyTorch Dueling DQN style agent used by training and inference. |
 | Training runner | `rl/train_local.py` | Main local training script. |

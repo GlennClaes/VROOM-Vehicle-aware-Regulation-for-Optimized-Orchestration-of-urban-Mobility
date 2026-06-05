@@ -1,14 +1,16 @@
 [
   {
     "name": "Normal Traffic",
-    "description": "Average traffic volume",
+    "city": "Hasselt",
+    "description": "Average traffic volume in Hasselt",
     "config_file": "../scenarios/hasselt_xl/normal.sumocfg",
     "is_default": true,
     "presets": []
   },
   {
     "name": "Rush Hour",
-    "description": "High traffic volume",
+    "city": "Hasselt",
+    "description": "High traffic volume in Hasselt",
     "config_file": "../scenarios/hasselt_xl/rush_hour.sumocfg",
     "is_default": false,
     "presets": [
@@ -23,14 +25,16 @@
   },
   {
     "name": "Quiet Traffic",
-    "description": "Low traffic volume",
+    "city": "Hasselt",
+    "description": "Low traffic volume in Hasselt",
     "config_file": "../scenarios/hasselt_xl/quiet.sumocfg",
     "is_default": false,
     "presets": []
   },
   {
     "name": "Night Traffic",
-    "description": "Minimal traffic at night",
+    "city": "Hasselt",
+    "description": "Minimal traffic at night in Hasselt",
     "config_file": "../scenarios/hasselt_xl/night.sumocfg",
     "is_default": false,
     "presets": []

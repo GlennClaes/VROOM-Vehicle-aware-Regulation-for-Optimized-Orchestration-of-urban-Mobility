@@ -1,11 +1,11 @@
 # VROOM: AI Traffic Control for Hasselt XL
 
-[![Continuous Integration](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CI.yml/badge.svg)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CI.yml)
-[![Continuous Deployment](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CD.yml/badge.svg)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CD.yml)
-[![Security Scan](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/security.yml/badge.svg)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/security.yml)
-[![Latest Version](https://img.shields.io/badge/version-v0.0.14-brightgreen)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/releases)
-[![Backend Coverage](https://img.shields.io/badge/Backend_Coverage-89%25-brightgreen)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CI.yml)
-[![Frontend Coverage](https://img.shields.io/badge/Frontend_Coverage-92%25-brightgreen)](https://github.com/PXLAIRobotics/research-project-25-26-ain03/actions/workflows/CI.yml)
+[![Continuous Integration](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
+[![Continuous Deployment](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CD.yml)
+[![Security Scan](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml/badge.svg)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/security.yml)
+[![Latest Version](https://img.shields.io/badge/version-v0.0.14-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/releases)
+[![Backend Coverage](https://img.shields.io/badge/Backend_Coverage-89%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
+[![Frontend Coverage](https://img.shields.io/badge/Frontend_Coverage-92%25-brightgreen)](https://github.com/GlennClaes/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/actions/workflows/CI.yml)
 
 VROOM is a research project for traffic-light control in the Hasselt XL SUMO network. The application combines a Vue dashboard, a FastAPI backend, a SUMO/Three.js 3D simulator and a PyTorch DQN-based reinforcement-learning pipeline. The goal is to compare fixed-time traffic control with learned control strategies and to make the simulation easy to run, inspect and evaluate.
 
@@ -96,6 +96,24 @@ flowchart TB
     gateway --> prodbe
     gateway --> prodsumo
 ```
+
+## Communicating Traffic Lights & C++ Performance Optimization
+
+The project features a modular, scalable architecture supporting advanced traffic management:
+
+### 1. Communicating Intersections
+Intersections communicate peer-to-peer and via a centralized network Registry using a unified [CommunicationManager](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/vroom_architecture.py). Traffic lights exchange:
+- Queue status & vehicles counting.
+- Priority vehicle detections (emergency services/public transit).
+- Incident detections (stalled vehicles, high delays).
+- Predicted inflow trends.
+Neighboring traffic lights adapt their pressures and adjust green-wave offsets accordingly.
+
+### 2. C++ Performance Optimization
+Heavy flow forecasting, exponential smoothing, green wave offset computations, and sigmoidal queue spillback probability checks are offloaded to a high-performance C++ module [prediction_engine.cpp](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/prediction_engine.cpp).
+- Compiled on container/app startup using [compile_cpp.py](file:///c:/Projecten/VROOM-Vehicle-aware-Regulation-for-Optimized-Orchestration-of-urban-Mobility/backend/rl/core/compile_cpp.py).
+- Bound dynamically in Python via `ctypes`.
+- Automatically falls back to a pure-Python implementation if a C++ compiler is not present.
 
 ## Repository Structure
 

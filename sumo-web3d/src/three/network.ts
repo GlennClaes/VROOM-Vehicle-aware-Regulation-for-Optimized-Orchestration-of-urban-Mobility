@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 import { keyBy, mapValues, meanBy } from 'lodash-es'
 
 import type {
@@ -48,6 +49,8 @@ export interface MeshAndPosition {
 export interface OsmIdToMesh {
     [osmId: string]: MeshAndPosition[]
 }
+
+export const EXPORT_KPI_DEFS = [] // unused placeholder
 
 function isRailway(allowed: ClassLookup): boolean {
     return (
@@ -104,10 +107,21 @@ export function makeStaticObjects(
     bgMesh.receiveShadow = false; // Shadow maps disabled for 60fps
     group.add(bgMesh)
 
-
     // Edges
     const idToType = keyBy(network.net.type || [], 'id')
     const idToAllowed = mapValues(idToType, (t2) => indexAllowedClasses(t2.allow))
+    const laneMarkingGeoms: THREE.BufferGeometry[] = []
+    
+    // Group lane geometries by material for merging
+    const laneGeomsByMaterial = new Map<THREE.Material, { geoms: THREE.BufferGeometry[], userDatas: any[] }>()
+    const getLaneGeomList = (mat: THREE.Material) => {
+        let entry = laneGeomsByMaterial.get(mat)
+        if (!entry) {
+            entry = { geoms: [], userDatas: [] }
+            laneGeomsByMaterial.set(mat, entry)
+        }
+        return entry
+    }
 
     for (const edge of network.net.edge) {
         if (edge.function === 'internal' || edge.function === 'walkingarea') continue
@@ -118,23 +132,34 @@ export function makeStaticObjects(
             const coords = parseShape(lane.shape)
             const width = lane.width ? Number(lane.width) : DEFAULT_LANE_WIDTH_M
 
-            // Draw a full-width white base to act as lane markings
+            // Draw a full-width white base to act as lane markings (collect for merging)
             const baseGeo = lineString(coords, t, { width, uScaleFactor: 1 })
-            const baseMesh = new THREE.Mesh(baseGeo, materials.LANE_MARKING)
-            baseMesh.receiveShadow = false;
-            group.add(baseMesh)
+            laneMarkingGeoms.push(baseGeo)
 
             // Draw the actual road surface slightly smaller (0.15m smaller) to expose the white markings
             const roadWidth = Math.max(0.5, width - 0.2)
             const geo = lineString(coords, t, { width: roadWidth, uScaleFactor: 1 })
             const mat = laneToMaterial(edgeType, allowed, edge, lane)
-            const mesh = new THREE.Mesh(geo, mat)
-            mesh.receiveShadow = false
-            mesh.position.y += 0.05 // raise slightly to prevent z-fighting
-            mesh.userData = {
+            
+            const laneUserData = {
                 type: 'edge',
                 name: `Edge ${edge.id}, Lane ${lane.id}`,
                 osmId: { id: edge.id, type: 'way' },
+            }
+
+            // Collect geometry for merging
+            const mergeList = getLaneGeomList(mat)
+            mergeList.geoms.push(geo)
+            mergeList.userDatas.push(laneUserData)
+
+            // Keep individual invisible mesh in group/scene for selection highlights
+            const mesh = new THREE.Mesh(geo, mat)
+            mesh.receiveShadow = false
+            mesh.visible = false
+            mesh.position.y += 0.05 // raise slightly to prevent z-fighting
+            mesh.userData = {
+                ...laneUserData,
+                isHidden: true,
             }
             group.add(mesh)
             const mp: MeshAndPosition = { mesh, position: getMeshCenter(mesh) }
@@ -145,7 +170,58 @@ export function makeStaticObjects(
         }
     }
 
+    // Merge lane/road geometries by material
+    for (const [mat, entry] of laneGeomsByMaterial.entries()) {
+        if (entry.geoms.length === 0) continue
+        try {
+            const mergedGeo = BufferGeometryUtils.mergeGeometries(entry.geoms)
+            if (mergedGeo) {
+                // Build faceIndex to userData lookup
+                const faceToUserData: any[] = []
+                let currentFaceOffset = 0
+                for (let i = 0; i < entry.geoms.length; i++) {
+                    const geom = entry.geoms[i]
+                    const faceCount = geom.index ? (geom.index.count / 3) : (geom.attributes.position.count / 3)
+                    const userData = entry.userDatas[i]
+                    for (let f = 0; f < faceCount; f++) {
+                        faceToUserData[currentFaceOffset + f] = userData
+                    }
+                    currentFaceOffset += faceCount
+                }
+
+                const mergedMesh = new THREE.Mesh(mergedGeo, mat)
+                mergedMesh.receiveShadow = false
+                mergedMesh.position.y += 0.05
+                mergedMesh.userData = {
+                    faceToUserData,
+                }
+                group.add(mergedMesh)
+                console.log(`[Three3D] Merged ${entry.geoms.length} geometries for material successfully.`)
+            }
+        } catch (err) {
+            console.error("[Three3D] Failed to merge geometries for material:", err)
+        }
+    }
+
+    // Merge all collected lane marking geometries to reduce draw calls from thousands to ONE
+    if (laneMarkingGeoms.length > 0) {
+        try {
+            const mergedMarkingsGeo = BufferGeometryUtils.mergeGeometries(laneMarkingGeoms)
+            if (mergedMarkingsGeo) {
+                const mergedMarkingsMesh = new THREE.Mesh(mergedMarkingsGeo, materials.LANE_MARKING)
+                mergedMarkingsMesh.receiveShadow = false
+                group.add(mergedMarkingsMesh)
+                console.log(`[Three3D] Merged ${laneMarkingGeoms.length} lane marking geometries successfully.`)
+            }
+        } catch (mergeErr) {
+            console.error("[Three3D] Failed to merge lane markings:", mergeErr)
+        }
+    }
+
     // Junctions
+    const junctionGeoms: THREE.BufferGeometry[] = []
+    const junctionUserDatas: any[] = []
+
     for (const junction of network.net.junction) {
         if (junction.type === 'internal') continue
         const points = parseShape(junction.shape).map((pt) => t.xyToXz(pt))
@@ -153,13 +229,24 @@ export function makeStaticObjects(
         try {
             const jMesh = flatMeshFromVertices(points, materials.JUNCTION)
             if (junction.z) jMesh.position.setY(Number(junction.z))
-            jMesh.receiveShadow = true
-            jMesh.userData = {
+            jMesh.receiveShadow = false
+            jMesh.visible = false
+            
+            const jUserData = {
                 type: 'junction',
                 name: `Junction ${junction.id}`,
                 osmId: { id: junction.id, type: 'node' },
             }
+            jMesh.userData = {
+                ...jUserData,
+                isHidden: true,
+            }
             group.add(jMesh)
+
+            // Collect for merging
+            junctionGeoms.push(jMesh.geometry)
+            junctionUserDatas.push(jUserData)
+
             const avgX = meanBy(points, (p) => p[0])
             const avgZ = meanBy(points, (p) => p[1])
             osmIdToMeshes[junction.id] = [
@@ -167,6 +254,36 @@ export function makeStaticObjects(
             ]
         } catch {
             // skip malformed junctions
+        }
+    }
+
+    // Merge junctions
+    if (junctionGeoms.length > 0) {
+        try {
+            const mergedJunctionsGeo = BufferGeometryUtils.mergeGeometries(junctionGeoms)
+            if (mergedJunctionsGeo) {
+                const faceToUserData: any[] = []
+                let currentFaceOffset = 0
+                for (let i = 0; i < junctionGeoms.length; i++) {
+                    const geom = junctionGeoms[i]
+                    const faceCount = geom.index ? (geom.index.count / 3) : (geom.attributes.position.count / 3)
+                    const userData = junctionUserDatas[i]
+                    for (let f = 0; f < faceCount; f++) {
+                        faceToUserData[currentFaceOffset + f] = userData
+                    }
+                    currentFaceOffset += faceCount
+                }
+
+                const mergedJunctionMesh = new THREE.Mesh(mergedJunctionsGeo, materials.JUNCTION)
+                mergedJunctionMesh.receiveShadow = false
+                mergedJunctionMesh.userData = {
+                    faceToUserData,
+                }
+                group.add(mergedJunctionMesh)
+                console.log(`[Three3D] Merged ${junctionGeoms.length} junctions successfully.`)
+            }
+        } catch (err) {
+            console.error("[Three3D] Failed to merge junctions:", err)
         }
     }
 
@@ -185,7 +302,7 @@ export function makeStaticObjects(
             const waterMesh = new THREE.Mesh(waterGeo, materials.WATER)
             waterMesh.rotation.set(Math.PI / 2, 0, 0)
             waterMesh.userData.name = 'Water'
-            waterMesh.receiveShadow = true
+            waterMesh.receiveShadow = false
             group.add(waterMesh)
         }
     }
@@ -269,8 +386,8 @@ function makeBuilding(polygon: Polygon, t: Transform): THREE.Mesh | null {
             name: `POI ${polygon.id}`,
             osmId: { id: polygon.id, type: 'way' },
         }
-        obj.castShadow = true
-        obj.receiveShadow = true
+        obj.castShadow = false
+        obj.receiveShadow = false
         return obj
     } catch {
         return null

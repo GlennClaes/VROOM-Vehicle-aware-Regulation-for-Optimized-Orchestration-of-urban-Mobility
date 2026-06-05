@@ -17,6 +17,22 @@ jobs:
       with:
         fetch-depth: '0'
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Compile C++ prediction library
+      run: |
+        cd backend
+        python rl/core/compile_cpp.py
+
+    - name: Build python package wheels
+      run: |
+        cd sumo-web3d
+        pip install build
+        python -m build
+
     - name: Bump version and push tag
       id: tag_action
       uses: anothrNick/github-tag-action@1.67.0
@@ -41,7 +57,7 @@ jobs:
         fail_on_unmatched_files: false
         files: |
           backend/rl/models/dqn_universal_best.pt
+          backend/rl/core/libprediction_engine.so
+          sumo-web3d/dist/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

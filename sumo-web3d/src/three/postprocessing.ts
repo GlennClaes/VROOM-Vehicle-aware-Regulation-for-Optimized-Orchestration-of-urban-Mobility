@@ -25,13 +25,13 @@ export default class Effects {
         smaa: boolean;
         fog: boolean;
     };
-    private ssaoPass!: SSAOPass;
+    private ssaoPass?: SSAOPass;
     private ssaoParams!: {
         cameraNear: number;
         cameraFar: number;
         radius: number;
     };
-    private smaaPass!: SMAAPass;
+    private smaaPass?: SMAAPass;
     private fog: three.FogExp2;
 
     constructor(
@@ -64,9 +64,6 @@ export default class Effects {
 
         // 2. Maak de passes aan
         const renderPass = new RenderPass(this.scene, this.camera);
-
-        this.ssaoPass = new SSAOPass(this.scene, this.camera, width, height);
-        this.smaaPass = new SMAAPass(width, height);
         const copyPass = new ShaderPass(CopyShader);
         copyPass.renderToScreen = true;
 
@@ -87,43 +84,60 @@ export default class Effects {
         // 6. Composer samenstellen
         this.composer = new EffectComposer(this.renderer);
         this.composer.addPass(renderPass);
-        this.composer.addPass(this.smaaPass);
-        this.composer.addPass(this.ssaoPass);
         this.composer.addPass(copyPass);
 
         this.effectsEnabled = {
             ssao: false,
-            smaa: false, // Disabled for 60fps optimization
+            smaa: false, // Disabled by default
             fog: false,
         };
-        this.ssaoPass.enabled = false;
 
         effectsFolder.add(this.effectsEnabled, 'smaa').onChange((v: boolean) => {
-            this.smaaPass.enabled = v;
+            if (v && !this.smaaPass) {
+                this.smaaPass = new SMAAPass(width, height);
+                this.composer.insertPass(this.smaaPass, 1); // Insert after RenderPass
+            }
+            if (this.smaaPass) {
+                this.smaaPass.enabled = v;
+            }
         });
         effectsFolder.add(this.effectsEnabled, 'ssao').onChange((v: boolean) => {
-            this.ssaoPass.enabled = v;
+            if (v && !this.ssaoPass) {
+                this.ssaoPass = new SSAOPass(this.scene, this.camera, width, height);
+                updateSSAO();
+                this.composer.insertPass(this.ssaoPass, 2); // Insert after SMAAPass/RenderPass
+            }
+            if (this.ssaoPass) {
+                this.ssaoPass.enabled = v;
+            }
         });
         effectsFolder.add(this.effectsEnabled, 'fog').onChange((v: boolean) => {
             this.scene.fog = v ? this.fog : null;
         });
-
-        // Voer de eerste update uit nadat alles is aangemaakt
-        updateSSAO();
     }
 
     render() {
-        this.composer.render();
+        if ((!this.smaaPass || !this.smaaPass.enabled) && (!this.ssaoPass || !this.ssaoPass.enabled)) {
+            this.renderer.render(this.scene, this.camera);
+        } else {
+            this.composer.render();
+        }
     }
 
     onResize(width: number, height: number, pixelRatio: number = window.devicePixelRatio) {
-        const newWidth = Math.floor(width * pixelRatio) || width;
-        const newHeight = Math.floor(height * pixelRatio) || height;
+        const cappedRatio = Math.min(pixelRatio, 1.5);
+        const newWidth = Math.floor(width * cappedRatio) || width;
+        const newHeight = Math.floor(height * cappedRatio) || height;
 
-        this.composer.setSize(newWidth, newHeight);
+        if (this.composer) {
+            this.composer.setSize(newWidth, newHeight);
+        }
 
         if (this.ssaoPass) {
             this.ssaoPass.setSize(newWidth, newHeight);
+        }
+        if (this.smaaPass) {
+            this.smaaPass.setSize(newWidth, newHeight);
         }
     }
 }

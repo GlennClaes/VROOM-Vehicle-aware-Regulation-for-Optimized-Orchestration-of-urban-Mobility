@@ -87,6 +87,7 @@ services:
     volumes:
       - ./backend/scenarios:/app/scenarios
       - ./backend/rl/models:/app/rl/models
+      - ./backend/rl/core:/app/sumo_web3d/server/rl_core
       - ./sumo-web3d:/app
       - /app/node_modules
     depends_on:

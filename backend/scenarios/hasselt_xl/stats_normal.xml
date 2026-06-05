@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-05-28 10:57:12 by Eclipse SUMO sumo Version 1.12.0
+<!-- generated on 2026-06-05 07:04:50 by Eclipse SUMO sumo Version 1.12.0
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
     <input>
@@ -15,7 +15,7 @@
     </output>
 
     <time>
-        <step-length value="2.0"/>
+        <step-length value="1.0"/>
     </time>
 
     <processing>
@@ -35,23 +35,23 @@
     </report>
 
     <traci_server>
-        <remote-port value="47695"/>
+        <remote-port value="52923"/>
     </traci_server>
 
     <gui_only>
         <gui-settings-file value="/app/scenarios/hasselt_xl/osm.view.xml"/>
-        <tracker-interval value="2.0"/>
+        <tracker-interval value="1.0"/>
     </gui_only>
 
 </configuration>
 -->
 
 <statistics xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/statistic_file.xsd">
-    <vehicles loaded="404" inserted="347" running="284" waiting="0"/>
-    <teleports total="75" jam="0" yield="0" wrongLane="0"/>
-    <safety collisions="75" emergencyStops="0"/>
+    <vehicles loaded="404" inserted="247" running="227" waiting="0"/>
+    <teleports total="0" jam="0" yield="0" wrongLane="0"/>
+    <safety collisions="0" emergencyStops="0"/>
     <persons loaded="0" running="0" jammed="0"/>
-    <vehicleTripStatistics routeLength="2207.45" speed="10.85" duration="190.29" waitingTime="10.92" timeLoss="49.15" departDelay="0.51" departDelayWaiting="-1.00" totalTravelTime="11988.00" totalDepartDelay="32.00"/>
+    <vehicleTripStatistics routeLength="1065.98" speed="8.87" duration="109.25" waitingTime="8.40" timeLoss="23.87" departDelay="0.00" departDelayWaiting="-1.00" totalTravelTime="2185.00" totalDepartDelay="0.00"/>
     <pedestrianStatistics number="0" routeLength="0.00" duration="0.00" timeLoss="0.00"/>
     <rideStatistics number="0"/>
     <transportStatistics number="0"/>

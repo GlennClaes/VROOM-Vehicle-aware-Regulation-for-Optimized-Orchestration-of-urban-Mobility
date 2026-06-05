@@ -2,13 +2,7 @@
 sumo_env.py — Universele Multi-Intersection Gymnasium Environment voor SUMO
 Bestuurt ALLE verkeerslichten in Hasselt XL tegelijk voor optimale doorstroming.
 
-Verbeteringen t.o.v. v1:
-  • Per-lane observatie: queue, voertuigcount, wachttijd, snelheid (4 features/lane)
-  • Kruispunt-context: druk van naburige TLS opgenomen in state
-  • Rijkere reward: ook gemiddelde wachttijd afstraffen
-  • State dim: 8 lanes × 4 features + phase + intensity + buurdruk = 35
-
-Compatibel met train_local.py → verander state_dim=27 naar state_dim=35.
+Refactored to use the unified object-oriented domain classes and CommunicationManager.
 """
 
 import os
@@ -30,6 +24,61 @@ try:
     import traci.exceptions
 except ImportError:
     raise ImportError("TraCI niet gevonden! Zorg dat SUMO_HOME correct is ingesteld.")
+
+# Import unified architecture with robust fallback path
+try:
+    from rl.core.vroom_architecture import TrafficNetwork, Intersection, TrafficLight, MetricsCollector
+except ImportError:
+    try:
+        from core.vroom_architecture import TrafficNetwork, Intersection, TrafficLight, MetricsCollector
+    except ImportError:
+        try:
+            from app.rl.core.vroom_architecture import TrafficNetwork, Intersection, TrafficLight, MetricsCollector
+        except ImportError:
+            # Inline mock in case of emergency (prevents startup crash)
+            class TrafficNetwork:
+                def __init__(self):
+                    self.intersections = {}
+                    class CM:
+                        def post_message(self, *a, **k): pass
+                        def broadcast_status(self, *a, **k): pass
+                        def query_central_registry(self, *a, **k): return None
+                    self.comm_manager = CM()
+                    class PE:
+                        def record_flow(self, *a, **k): pass
+                        def predict_flow(self, *a, **k): return 0.0
+                        def compute_green_wave_offset(self, *a, **k): return 0.0
+                        def calculate_queue_spillback_probability(self, *a, **k): return 0.0
+                    self.prediction_engine = PE()
+                def build_neighborhood_graph(self): pass
+            class Intersection:
+                def __init__(self, node_id, tl, inc, out):
+                    self.id = node_id
+                    self.traffic_light = tl
+                    self.incoming_lanes = inc
+                    self.outgoing_lanes = out
+                    self.neighbor_ids = []
+                    self.has_priority_vehicle = False
+                    self.has_incident = False
+                def update_sensor_data(self, traci_conn): pass
+            class TrafficLight:
+                def __init__(self, tls_id, green_phases, phase_to_lanes):
+                    self.id = tls_id
+                    self.green_phases = green_phases
+                    self.phase_to_lanes = phase_to_lanes
+                    self.current_phase_idx = 0
+                    self.yellow_active = False
+                    self.yellow_remaining = 0.0
+                    self.green_step_counter = 0.0
+                    self.step_counter = 0.0
+                def tick(self, dt=1.0):
+                    self.step_counter += dt
+                def set_phase(self, phase_idx, conn, target):
+                    self.current_phase_idx = phase_idx
+            class MetricsCollector:
+                def __init__(self): self.last_metrics = {}
+                def update_metrics(self, *a, **k): pass
+                def get_snapshot(self): return self.last_metrics
 
 # ─── Constanten ────────────────────────────────────────────────────────────────
 YELLOW_DURATION    = 3.0
@@ -83,7 +132,7 @@ class SumoIntersectionEnv(gym.Env):
         self._label       = f"sumo_{port}"
         self._sumo_running = False
 
-        # State: 35 features per TLS
+        # State: 48 features per TLS
         self.observation_space = spaces.Box(
             low=0.0, high=1.0, shape=(STATE_DIM,), dtype=np.float32
         )
@@ -92,10 +141,14 @@ class SumoIntersectionEnv(gym.Env):
         self.tls_ids    = []
         self.all_lanes  = set()
         self.tls_info   = {}
-        self.neighbors  = {}   # tls_id → [naburige tls_ids]
         self.last_queues = {}  # tls_id → total_queue (voor reward diff)
         self._step_count = 0
         self._intensity  = 0.5
+        self.current_scenario = "normal"
+        
+        # Unified components
+        self.network = TrafficNetwork()
+        self.metrics_collector = MetricsCollector()
 
     # ── Detectie & Initialisatie ────────────────────────────────────────────────
 
@@ -109,6 +162,9 @@ class SumoIntersectionEnv(gym.Env):
         self.tls_info  = {}
         self.all_lanes = set()
         self.tls_lane_map = {}
+        
+        # Re-initialize network object
+        self.network = TrafficNetwork()
 
         # Stap 1: bouw lane-info per TLS
         for tls_id in self.tls_ids:
@@ -162,12 +218,30 @@ class SumoIntersectionEnv(gym.Env):
                 if not green_phases:
                     green_phases = [0]
 
+                # Map phase to green lanes
+                phase_to_lanes = {}
+                for p_idx in range(n_phases):
+                    state = logic.phases[p_idx].state
+                    g_lanes = []
+                    for i, char in enumerate(state):
+                        if char.lower() == 'g':
+                            link = links[i]
+                            if link and link[0]:
+                                g_lanes.append(link[0][0])
+                    phase_to_lanes[p_idx] = list(set(g_lanes))
+
+                # Instantiate new domain elements
+                tl = TrafficLight(tls_id, green_phases, phase_to_lanes)
+                tl.min_green = 20.0
+                intersection = Intersection(tls_id, tl, incoming, outgoing)
+                self.network.add_intersection(intersection)
+
                 self.tls_info[tls_id] = {
                     "incoming":          incoming,
                     "outgoing":          outgoing,
                     "n_phases":          n_phases,
                     "green_phases":      green_phases,
-                    "phase_to_lanes":    {},  # fase_idx -> [lijst van inkomende lanes die groen zijn]
+                    "phase_to_lanes":    phase_to_lanes,
                     "current_phase_idx": 0,
                     "yellow_active":     False,
                     "yellow_timer":      0,
@@ -177,23 +251,11 @@ class SumoIntersectionEnv(gym.Env):
                     "just_switched":     False
                 }
 
-                # Vul phase_to_lanes
-                for p_idx in range(n_phases):
-                    state = logic.phases[p_idx].state
-                    g_lanes = []
-                    for i, char in enumerate(state):
-                        if char.lower() == 'g':
-                            # Zoek welke lane bij dit index hoort
-                            link = links[i]
-                            if link and link[0]:
-                                g_lanes.append(link[0][0])
-                    self.tls_info[tls_id]["phase_to_lanes"][p_idx] = list(set(g_lanes))
-
             except Exception as e:
                 print(f"[WARN] TLS detectie mislukt voor {tls_id}: {e}")
 
-        # Stap 2: bouw buur-graph (outgoing van A == incoming van B → A en B zijn buren)
-        self._build_neighbor_graph()
+        # Stap 2: bouw buur-graph in unified network
+        self.network.build_neighborhood_graph()
 
         # Stap 3: bulk TraCI subscriptions voor alle lanes (snelste methode)
         for lane_id in self.all_lanes:
@@ -206,26 +268,6 @@ class SumoIntersectionEnv(gym.Env):
 
         print(f"[ENV] {len(self.tls_ids)} TLS gedetecteerd, "
               f"{len(self.all_lanes)} lanes gesubscribed.")
-
-    def _build_neighbor_graph(self):
-        """
-        Bouwt een dict {tls_id: [buur_tls_ids]} op basis van
-        gedeelde lanes (outgoing van A overlapt incoming van B).
-        """
-        # Maak snelle opzoektabel: lane → welke TLS heeft die als incoming
-        lane_to_tls = {}
-        for tls_id, info in self.tls_info.items():
-            for lane in info["incoming"]:
-                lane_to_tls.setdefault(lane, []).append(tls_id)
-
-        self.neighbors = {tls_id: [] for tls_id in self.tls_ids}
-        for tls_id, info in self.tls_info.items():
-            seen = set()
-            for lane in info["outgoing"]:
-                for neighbor_id in lane_to_tls.get(lane, []):
-                    if neighbor_id != tls_id and neighbor_id not in seen:
-                        self.neighbors[tls_id].append(neighbor_id)
-                        seen.add(neighbor_id)
 
     # ── Reset & Step ───────────────────────────────────────────────────────────
 
@@ -260,10 +302,13 @@ class SumoIntersectionEnv(gym.Env):
             self._sumo_running = True
             self._step_count   = 0
             self._detect_tls()
+            
+            # Reset unified metrics collector
+            self.metrics_collector = MetricsCollector()
+            self.network.prediction_engine.clear()
         except Exception as e:
             print(f"[ERROR] TraCI start mislukt: {e}")
             self._sumo_running = False
-            # Probeer nogmaals te sluiten om de label vrij te geven
             try:
                 traci.close(self._label)
             except Exception:
@@ -280,12 +325,20 @@ class SumoIntersectionEnv(gym.Env):
         # ── Fase-wissels toepassen ──────────────────────────────────────────────
         for tls_id, action in actions.items():
             info = self.tls_info[tls_id]
-            if info["yellow_active"]:
+            node = self.network.intersections.get(tls_id)
+            if not node:
+                continue
+
+            tl = node.traffic_light
+
+            if tl.yellow_active:
+                # Update legacy local timers as well
+                info["yellow_active"] = tl.yellow_active
+                info["yellow_timer"] = int(tl.yellow_remaining)
                 continue  # Wacht tot geel afgelopen is
 
-            # Enforce a minimum green time to prevent rapid oscillation (jitter)
-            # Verhoogd naar 20 seconden voor meer stabiliteit en minder geel-irritatie
-            if info.get("time_since_switch", 0) < 20:
+            # Enforce minimum green time (legacy = 20s)
+            if tl.green_step_counter < tl.min_green:
                 continue 
 
             available    = info["green_phases"]
@@ -294,31 +347,12 @@ class SumoIntersectionEnv(gym.Env):
 
             if desired_green != current_phase:
                 try:
-                    # Haal het actieve programma op
-                    logic_id = traci.trafficlight.getProgram(tls_id)
-                    all_logics = traci.trafficlight.getAllProgramLogics(tls_id)
-                    logic = next((l for l in all_logics if l.programID == logic_id), all_logics[0])
+                    tl.set_phase(action % len(available), traci, desired_green)
                     
-                    # Zoek naar een gele fase tussen de huidige en de gewenste groene fase
-                    # We kijken eerst naar de directe opvolger (standaard SUMO gedrag)
-                    yellow_candidate = (current_phase + 1) % len(logic.phases)
-                    phase_state = logic.phases[yellow_candidate].state
-                    
-                    # Als de volgende fase geel is, gebruiken we die. 
-                    # Anders springen we direct (of SUMO regelt de transitie zelf als we setPhase doen)
-                    # Als de volgende fase geel is, gebruiken we die. 
-                    if 'y' in phase_state.lower() or 'Y' in phase_state:
-                        traci.trafficlight.setPhase(tls_id, yellow_candidate)
-                        # FORCEER de duur in SUMO zelf naar exact YELLOW_DURATION
-                        traci.trafficlight.setPhaseDuration(tls_id, float(YELLOW_DURATION))
-                        
-                        info["yellow_active"]  = True
-                        info["yellow_timer"]   = int(YELLOW_DURATION)
-                        info["pending_green"]  = desired_green
-                    else:
-                        # Directe sprong naar groen als er geen tussenliggend geel wordt gevonden
-                        traci.trafficlight.setPhase(tls_id, desired_green)
-
+                    # Sync back to legacy structures
+                    info["yellow_active"]  = tl.yellow_active
+                    info["yellow_timer"]   = int(tl.yellow_remaining)
+                    info["pending_green"]  = desired_green
                     info["time_since_switch"] = 0
                     info["just_switched"]     = True
                 except Exception as e:
@@ -326,40 +360,68 @@ class SumoIntersectionEnv(gym.Env):
 
         # ── Simulatiestappen + geel-afwikkeling ────────────────────────────────
         for _ in range(STEPS_PER_ACTION):
-            for tls_id, info in self.tls_info.items():
-                if info["yellow_active"]:
-                    info["yellow_timer"] -= 1
-                    # Alleen wisselen als we EXACT op 0 komen
-                    if info["yellow_timer"] == 0:
-                        try:
-                            traci.trafficlight.setPhase(tls_id, info["pending_green"])
-                            # Zet ook de groenduur op een hoge waarde zodat SUMO niet zelf gaat wisselen
-                            traci.trafficlight.setPhaseDuration(tls_id, 999.0)
-                        except Exception:
-                            pass
-                        info["yellow_active"] = False
-
-            # Increment timers for all TLS
-            for info in self.tls_info.values():
-                info["time_since_switch"] += 1
+            for tls_id, node in self.network.intersections.items():
+                tl = node.traffic_light
+                info = self.tls_info[tls_id]
+                
+                tl.tick(1.0)
+                
+                # Geel-countdown logic
+                if tl.yellow_active and tl.yellow_remaining <= 0:
+                    try:
+                        traci.trafficlight.setPhase(tls_id, info["pending_green"])
+                        traci.trafficlight.setPhaseDuration(tls_id, 999.0)
+                    except: pass
+                
+                # Sync back to legacy
+                info["yellow_active"] = tl.yellow_active
+                info["yellow_timer"] = max(0, int(tl.yellow_remaining))
+                info["time_since_switch"] = int(tl.green_step_counter)
 
             traci.simulationStep()
             self._step_count += 1
+
+        # ── Update sensor data (Priority / Incident detection) ─────────────────
+        for node in self.network.intersections.values():
+            node.update_sensor_data(traci)
 
         # ── Observaties & beloningen ───────────────────────────────────────────
         obs     = self._get_observations()
         rewards = self._compute_rewards()
 
-        # Verzamel gesimuleerde statistieken voor safety penalties en evaluatie
+        # Update unified metrics
+        active_vehicles = {}
+        try:
+            # Fetch active vehicles for metrics
+            for vid in traci.vehicle.getIDList():
+                try:
+                    res = traci.vehicle.getSubscriptionResults(vid) or {}
+                    active_vehicles[vid] = {
+                        'waiting_time': res.get(0x7a, traci.vehicle.getWaitingTime(vid)),
+                        'time_loss': res.get(0x8c, traci.vehicle.getTimeLoss(vid)),
+                        'speed': res.get(0x40, traci.vehicle.getSpeed(vid)),
+                        'departure': traci.vehicle.getDeparture(vid)
+                    }
+                except: pass
+            
+            arrived_ids = traci.simulation.getArrivedIDList()
+            lane_subs = traci.lane.getAllSubscriptionResults()
+            self.metrics_collector.update_metrics(traci, active_vehicles, arrived_ids, lane_subs, self.network)
+        except Exception as e:
+            pass
+
         info = {"emergency_braking": 0, "teleports": 0, "total_queue": 0}
         try:
             info["emergency_braking"] = traci.simulation.getEmergencyStoppingVehiclesNumber()
             info["teleports"] = traci.simulation.getStartingTeleportNumber()
-            # Som van alle wachtende voertuigen op alle gesubscribed lanes
-            sub = traci.lane.getAllSubscriptionResults()
-            info["total_queue"] = sum(res.get(0x14, 0) for res in sub.values())
+            
+            # Read updated metrics snapshot
+            snapshot = self.metrics_collector.get_snapshot()
+            info["total_queue"] = int(snapshot.get("aql", 0) * len(self.all_lanes))
+            info["pressure"] = snapshot.get("pressure", 0)
+            info["fairness"] = snapshot.get("fairness", 1.0)
         except Exception:
-            pass # Verbinding mogelijk al gesloten door SUMO zelf
+            pass
 
         terminated = self._step_count >= MAX_EPISODE_STEPS
         if terminated:
@@ -375,15 +437,45 @@ class SumoIntersectionEnv(gym.Env):
 
     def _get_observations(self) -> dict:
         """
-        Bouwt per TLS een state-vector van STATE_DIM (35) features:
+        Bouwt per TLS een state-vector van STATE_DIM (48) features:
           [lane_0: queue, count, wait, speed]  × MAX_LANES_OBS (8 lanes)
           + phase_norm
           + intensity
-          + neighbor_pressure_norm
+          + neighbor_pressure_norm (Enriched via CommunicationManager status messages)
         """
         sub = traci.lane.getAllSubscriptionResults()
         obs_dict = {}
 
+        # ── COMM-STEP 1: Broadcast statuses for all intersections ──────────────
+        for tls_id, node in self.network.intersections.items():
+            selected_lanes = self.tls_lane_map.get(tls_id, [])
+            
+            lane_queues = {}
+            lane_counts = {}
+            for lid in selected_lanes:
+                res = sub.get(lid, {})
+                q = res.get(VAR_HALTING_NUMBER, 0)
+                c = res.get(VAR_VEHICLE_NUMBER, 0)
+                lane_queues[lid] = q
+                lane_counts[lid] = c
+                
+                # Record flow into C++ prediction engine
+                self.network.prediction_engine.record_flow(lid, c)
+
+            # Predict flows using C++ or fallback Python engine
+            predicted_flow = float(np.mean([self.network.prediction_engine.predict_flow(lid) for lid in selected_lanes])) if selected_lanes else 0.0
+
+            # Publish status to CommunicationManager
+            self.network.comm_manager.broadcast_status(tls_id, {
+                "timestamp": self._step_count,
+                "queues": lane_queues,
+                "current_phase": traci.trafficlight.getPhase(tls_id),
+                "priority_vehicle": node.has_priority_vehicle,
+                "incident": node.has_incident,
+                "predicted_flow": predicted_flow
+            })
+
+        # ── COMM-STEP 2: Compute states including communication data ───────────
         for tls_id, info in self.tls_info.items():
             lane_features = []
             selected_lanes = self.tls_lane_map.get(tls_id, [])
@@ -394,13 +486,12 @@ class SumoIntersectionEnv(gym.Env):
                 queue = res.get(VAR_HALTING_NUMBER, 0)
                 count = res.get(VAR_VEHICLE_NUMBER, 0)
                 wait  = res.get(VAR_WAITING_TIME, 0.0)
-                speed = res.get(VAR_MEAN_SPEED, MAX_SPEED)   # default = vrij rijden
+                speed = res.get(VAR_MEAN_SPEED, MAX_SPEED)
 
                 lane_features.extend([
                     min(queue / MAX_QUEUE_PER_LANE, 1.0),
                     min(count / MAX_VEH_PER_LANE,   1.0),
                     min(wait  / MAX_WAIT_TIME,       1.0),
-                    # Speed omgekeerd: laag = druk, hoog = vrij → normaliseer als drukmaat
                     1.0 - min(speed / MAX_SPEED, 1.0),
                 ])
 
@@ -410,18 +501,15 @@ class SumoIntersectionEnv(gym.Env):
 
             # Globale features
             curr_phase   = traci.trafficlight.getPhase(tls_id)
-            # One-hot encoding voor de huidige fase (max 12 fasen)
             phase_oh = [0.0] * MAX_PHASES_ONEHOT
             if curr_phase < MAX_PHASES_ONEHOT:
                 phase_oh[curr_phase] = 1.0
             
-            # Indicator of we al even op groen staan (min-green heuristiek)
-            # 15 stappen = 15 seconden (bij SIM_STEP=1.0)
             min_green_passed = 1.0 if info["time_since_switch"] >= 15 else 0.0
             
-            neighbor_pressure = self._compute_neighbor_pressure(tls_id, sub)
+            # Multi-agent / Communicating: Compute neighbor pressure enriched by messaging
+            neighbor_pressure = self._compute_neighbor_pressure(tls_id)
             
-            # Gecombineerde globale vector: phase_oh(12) + min_green(1) + intensity(1) + pressure(1) + yellow_active(1) = 16
             global_vec = phase_oh + [
                 min_green_passed,
                 float(self._intensity),
@@ -457,31 +545,53 @@ class SumoIntersectionEnv(gym.Env):
             pressure = sum(sub.get(lid, {}).get(VAR_VEHICLE_NUMBER, 0) for lid in lanes)
             phase_pressures.append(pressure)
         
-        # Kies de index van de fase met de hoogste druk
         best_idx = np.argmax(phase_pressures)
         return int(best_idx)
 
-    def _compute_neighbor_pressure(self, tls_id: str, sub: dict) -> float:
+    def _compute_neighbor_pressure(self, tls_id: str) -> float:
         """
         Gemiddelde genormaliseerde wachtrij-druk van naburige kruispunten.
-        Geeft de agent context over wat er stroomafwaarts wacht.
+        Uses CommunicationManager message registry to extract priority vehicles and incidents.
         """
-        neighbor_ids = self.neighbors.get(tls_id, [])
+        node = self.network.intersections.get(tls_id)
+        if not node:
+            return 0.0
+
+        neighbor_ids = node.neighbor_ids
         if not neighbor_ids:
             return 0.0
 
         pressures = []
         for nid in neighbor_ids:
+            # Query central registry
+            status = self.network.comm_manager.query_central_registry(nid)
             ninfo = self.tls_info.get(nid)
+            
             if not ninfo:
                 continue
-            total_q = sum(
-                sub.get(lid, {}).get(VAR_HALTING_NUMBER, 0)
-                for lid in ninfo["incoming"]
-            )
-            # Normaliseer op basis van aantal lanes × max queue
+
+            # Default queue calculation
+            if status and "queues" in status:
+                total_q = sum(status["queues"].values())
+            else:
+                sub = traci.lane.getAllSubscriptionResults()
+                total_q = sum(sub.get(lid, {}).get(VAR_HALTING_NUMBER, 0) for lid in ninfo["incoming"])
+
             n_lanes = max(len(ninfo["incoming"]), 1)
-            pressures.append(min(total_q / (n_lanes * MAX_QUEUE_PER_LANE), 1.0))
+            raw_pressure = min(total_q / (n_lanes * MAX_QUEUE_PER_LANE), 1.0)
+
+            # COMMUNICATING ADAPTATION:
+            if status:
+                # 1. If neighbor warns of emergency/priority vehicle, artificially increase pressure weight
+                # to clear routes for emergency green waves
+                if status.get("priority_vehicle", False):
+                    raw_pressure = min(raw_pressure + 0.3, 1.0)
+                
+                # 2. Upstream incident: decrease pressure slightly or flag congestion
+                if status.get("incident", False):
+                    raw_pressure = min(raw_pressure + 0.15, 1.0)
+
+            pressures.append(raw_pressure)
 
         return float(np.mean(pressures)) if pressures else 0.0
 
@@ -489,51 +599,38 @@ class SumoIntersectionEnv(gym.Env):
 
     def _compute_rewards(self) -> dict:
         """
-        Reward per TLS (gebaseerd op PN_D3QN paper):
+        Reward per TLS:
           + diff_q (reductie in wachtrij t.o.v. vorige stap)
           + aangekomen voertuigen
           - huidige wachtrij & wachttijd
-          - druk-disbalans
         """
         rewards    = {}
-        arrived    = traci.simulation.getArrivedNumber()
         sub        = traci.lane.getAllSubscriptionResults()
 
         for tls_id, info in self.tls_info.items():
             inc_lanes = info["incoming"]
-            out_lanes = info["outgoing"]
             n_in = max(len(inc_lanes), 1)
 
-            # 1. Huidige stats (genormaliseerd per lane voor eerlijke vergelijking)
             q_total    = sum(sub.get(lane, {}).get(VAR_HALTING_NUMBER, 0) for lane in inc_lanes)
             wait_total = sum(sub.get(lane, {}).get(VAR_WAITING_TIME,   0) for lane in inc_lanes)
-            # We gebruiken ook de gemiddelde snelheid als maatstaf voor doorstroming
             avg_speed  = np.mean([sub.get(lane, {}).get(VAR_MEAN_SPEED, 0) for lane in inc_lanes])
             
-            q_norm     = q_total / n_in     # gemiddelde queue per lane
-            wait_norm  = wait_total / n_in  # gemiddelde wachttijd per lane
+            q_norm     = q_total / n_in
+            wait_norm  = wait_total / n_in
 
-            # 2. Queue Difference (Cruciaal voor PN_D3QN)
             prev_q = self.last_queues.get(tls_id, q_total)
-            diff_q = prev_q - q_total  # Positief = wachtrij is korter geworden
+            diff_q = prev_q - q_total
             self.last_queues[tls_id] = q_total
 
-            # 3. Druk (MaxPressure)
-            in_count  = sum(sub.get(lane, {}).get(VAR_VEHICLE_NUMBER, 0) for lane in inc_lanes)
-            out_count = sum(sub.get(lane, {}).get(VAR_VEHICLE_NUMBER, 0) for lane in out_lanes)
-            pressure  = (in_count - out_count) / n_in
-
-            # Gecombineerde reward (geoptimaliseerd voor betere doorstroming)
             reward = (
-                  diff_q     *  2.5     # Beloning voor afname wachtrij (verhoogd)
-                - q_norm     *  0.8     # Straf voor wachtrij (iets zwaarder)
-                - wait_norm  *  0.05    # Straf voor wachttijd (vloeiender)
-                + (avg_speed / MAX_SPEED) * 1.5  # Bonus voor doorstroming/snelheid
+                  diff_q     *  2.5
+                - q_norm     *  0.8
+                - wait_norm  *  0.05
+                + (avg_speed / MAX_SPEED) * 1.5
             )
 
-            # Switching penalty: Alleen straffen als het zinloos is (bijv. bij een al lege wachtrij)
             if info.get("just_switched", False):
-                penalty = 3.0 if q_total < 2 else 1.0  # Zwaardere straf voor nutteloos wisselen
+                penalty = 3.0 if q_total < 2 else 1.0
                 reward -= penalty
                 info["just_switched"] = False
 

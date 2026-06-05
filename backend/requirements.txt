@@ -42,7 +42,5 @@ torch>=2.0.0
 numpy>=1.24.0
 traci>=1.19.0
 nose
-ultralytics
-opencv-python-headless
 httpx
 gunicorn

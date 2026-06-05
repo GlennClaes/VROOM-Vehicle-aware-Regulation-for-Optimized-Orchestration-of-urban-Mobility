@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<polyconvert>
+    <!-- Water -->
+    <type osm="water" name="water" layer="0" fill="blue" stroke="blue" priority="0"/>
+
+    <!-- Buildings -->
+    <type osm="building" name="building" layer="1" fill="grey" stroke="black" priority="1"/>
+
+    <!-- Grass / green areas -->
+    <type osm="grass" name="grass" layer="0" fill="green" stroke="darkgreen" priority="0"/>
+
+    <!-- Parks / leisure -->
+    <type osm="park" name="park" layer="0" fill="lightgreen" stroke="green" priority="0"/>
+
+    <!-- Roads are handled separately by netconvert -->
+</polyconvert>

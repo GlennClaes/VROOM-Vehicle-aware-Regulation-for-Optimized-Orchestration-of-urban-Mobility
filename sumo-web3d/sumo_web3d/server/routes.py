@@ -320,17 +320,18 @@ def setup_http_server(task, scenario_file, scenarios, state_ref):
         current = state_ref.get('current_scenario')
         if not current and scenarios:
             current = list(scenarios.values())[0]
-        if current:
-            request.match_info['scenario'] = current.name
-            return scenario_attribute_route(scenario_file, scenarios, 'network', None, request)
-        return web.Response(status=404, text='Geen scenario actief')
+        if current and current.network:
+            no_cache = {**CORS_HEADERS, 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'}
+            return web.Response(text=json.dumps(current.network), headers=no_cache)
+        return web.Response(status=404, text='Geen scenario actief', headers=CORS_HEADERS)
 
     async def quick_additional_handler(request):
         current = state_ref.get('current_scenario')
-        if current:
-            request.match_info['scenario'] = current.name
-            return additional_route_handler(request)
-        return web.Response(status=404, text='Geen scenario actief')
+        if current and current.additional:
+            filtered = {k: v for k, v in current.additional.items() if k in ('poly', 'busStop', 'tlLogic')}
+            no_cache = {**CORS_HEADERS, 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache'}
+            return web.Response(text=json.dumps(filtered), headers=no_cache)
+        return web.Response(status=404, text='Geen scenario actief', headers=CORS_HEADERS)
 
     async def quick_water_handler(request):
         current = state_ref.get('current_scenario')

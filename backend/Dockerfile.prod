@@ -6,10 +6,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential curl libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Create non-privileged user and group
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10000 -g appgroup -m -s /sbin/nologin appuser && \
+    chown -R appuser:appgroup /app
 
-COPY . .
+COPY --chown=appuser:appgroup requirements.txt .
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=appuser:appgroup . .
+
+USER appuser
 
 # In productie gebruiken we gunicorn voor stabiliteit en meerdere workers (2 is genoeg voor lokale prod tests)
 CMD ["gunicorn", "app.main:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]

@@ -19,6 +19,7 @@ class Scenario(object):
     @classmethod
     def from_config_json(cls, scenarios_json):
         name = scenarios_json['name']
+        city = scenarios_json.get('city', 'Hasselt')
         config_file = scenarios_json['config_file']
         sumocfg_file = os.path.normpath(
             os.path.join(DIR, os.path.expanduser(os.path.expandvars(config_file)))
@@ -49,6 +50,7 @@ class Scenario(object):
         return cls(
             sumocfg_file,
             name,
+            city,
             is_default,
             presets,
             parse_xml_file(net_file),
@@ -57,9 +59,10 @@ class Scenario(object):
             water
         )
 
-    def __init__(self, config_file, name, is_default, presets, network, additional, settings, water):
+    def __init__(self, config_file, name, city, is_default, presets, network, additional, settings, water):
         self.config_file = config_file
         self.display_name = name
+        self.city = city
         self.name = to_kebab_case(name)
         self.is_default = is_default
         self.presets = presets
@@ -136,5 +139,6 @@ def scenario_to_response_body(scenario):
     return {
         'displayName': scenario.display_name,
         'kebabCase': to_kebab_case(scenario.name),
+        'city': scenario.city,
         'presets': scenario.presets
     }

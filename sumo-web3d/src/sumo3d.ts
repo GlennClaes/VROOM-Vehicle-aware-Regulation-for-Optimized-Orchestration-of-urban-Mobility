@@ -119,6 +119,10 @@ export default class Sumo3D {
     private wasFullscreen: boolean = false;
     private exitStabilityTimer: any = null;
     private renderingEnabled: boolean = true;
+    private fpsFrameCount = 0;
+    private fpsLastTime = 0;
+    private lowFpsCount = 0;
+    private qualityDegraded = false;
 
     // ... inside constructor ...
 
@@ -150,9 +154,9 @@ export default class Sumo3D {
 
         this.trafficLights = new TrafficLights(init);
 
-        // Renderer setup - use native device pixel ratio for maximum sharpness
+        // Renderer setup - limit pixel ratio to 1.5 for a sharp image on Retina/4K displays while maintaining 60 FPS
         this.renderer = new three.WebGLRenderer({ antialias: true });
-        const pixelRatio = window.devicePixelRatio || 1;
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         (this.renderer as any).setPixelRatio(pixelRatio);
         (this.renderer as any).shadowMap.enabled = false;
         (this.renderer as any).shadowMap.type = three.PCFSoftShadowMap;
@@ -309,6 +313,7 @@ export default class Sumo3D {
             z - v.length / 2 * Math.cos(angle)
         );
         (vehicle as any).targetAngle = angle;
+        (vehicle as any).isStatic = false;
 
         if (!(vehicle as any).prevPos) {
             (vehicle as any).prevPos = (vehicle as any).targetPos.clone();
@@ -338,6 +343,7 @@ export default class Sumo3D {
             // Before updating, store current mesh state as previous for interpolation
             (vehicle as any).prevPos = (vehicle as any).targetPos?.clone() || vehicle.mesh.position.clone();
             (vehicle as any).prevAngle = (vehicle as any).targetAngle ?? vehicle.mesh.rotation.y;
+            (vehicle as any).isStatic = false;
 
             _.extend(vehicle.vehicleInfo, update);
             this.updateVehicleMesh(vehicle);
@@ -409,12 +415,51 @@ export default class Sumo3D {
         }
 
         this.frameTime = window.performance.now();
+        
+        // Performance Guard: auto-detect low frame rate
+        this.fpsFrameCount++;
+        if (this.fpsLastTime === 0) {
+            this.fpsLastTime = this.frameTime;
+        } else {
+            const elapsed = this.frameTime - this.fpsLastTime;
+            if (elapsed >= 1000) {
+                const fps = (this.fpsFrameCount * 1000) / elapsed;
+                this.fpsFrameCount = 0;
+                this.fpsLastTime = this.frameTime;
+                
+                if (fps < 15 && !this.qualityDegraded) {
+                    this.lowFpsCount++;
+                    if (this.lowFpsCount >= 3) {
+                        this.degradeQuality();
+                    }
+                } else {
+                    this.lowFpsCount = 0;
+                }
+            }
+        }
+
         this.interpolateVehicles();
         this.controls.update();
         this.postprocessing.render();
         this.stats.update();
 
         requestAnimationFrame(this.animate);
+    }
+
+    private degradeQuality() {
+        this.qualityDegraded = true;
+        console.warn("[PerformanceGuard] Low FPS detected (<15 FPS) for 3s. Automatically degrading WebGL quality to restore performance.");
+        
+        // 1. Drop pixel ratio to 0.75 for fast rendering
+        this.renderer.setPixelRatio(0.75);
+        this.postprocessing.onResize(this.parentElement.clientWidth, this.parentElement.clientHeight, 0.75);
+        
+        // 2. Hide buildings and water meshes to reduce draw calls
+        this.scene.traverse((obj) => {
+            if (obj.userData && (obj.userData.type === 'building' || obj.userData.type === 'water')) {
+                obj.visible = false;
+            }
+        });
     }
 
     setRenderingEnabled(enabled: boolean) {
@@ -436,26 +481,45 @@ export default class Sumo3D {
         // Clamp and ease for smoother motion (smoothstep)
         alpha = Math.min(Math.max(alpha, 0), 1.0);
         const easedAlpha = alpha * alpha * (3 - 2 * alpha);
+        const isFullyDone = (alpha >= 1.0);
 
         for (const id in this.vehicles) {
             const v = this.vehicles[id];
             const vAny = v as any;
             if (vAny.prevPos && vAny.targetPos) {
-                const dist = vAny.prevPos.distanceTo(vAny.targetPos);
+                if (vAny.isStatic) {
+                    continue;
+                }
+
+                const distSq = vAny.prevPos.distanceToSquared(vAny.targetPos);
+                if (distSq < 1e-6 && vAny.prevAngle === vAny.targetAngle) {
+                    vAny.isStatic = true;
+                    v.mesh.position.copy(vAny.targetPos);
+                    v.mesh.rotation.y = vAny.targetAngle;
+                    continue;
+                }
 
                 let actualAlpha = easedAlpha;
 
-                // Teleport snap only for very large jumps
-                if (dist > 60) {
+                // Teleport snap only for very large jumps (60^2 = 3600)
+                if (distSq > 3600) {
                     actualAlpha = 1.0;
                 }
 
-                v.mesh.position.lerpVectors(vAny.prevPos, vAny.targetPos, actualAlpha);
+                if (actualAlpha >= 1.0) {
+                    v.mesh.position.copy(vAny.targetPos);
+                    v.mesh.rotation.y = vAny.targetAngle;
+                    if (isFullyDone) {
+                        vAny.isStatic = true;
+                    }
+                } else {
+                    v.mesh.position.lerpVectors(vAny.prevPos, vAny.targetPos, actualAlpha);
 
-                let diff = vAny.targetAngle - vAny.prevAngle;
-                if (diff > Math.PI) diff -= Math.PI * 2;
-                if (diff < -Math.PI) diff += Math.PI * 2;
-                v.mesh.rotation.y = vAny.prevAngle + diff * actualAlpha;
+                    let diff = vAny.targetAngle - vAny.prevAngle;
+                    if (diff > Math.PI) diff -= Math.PI * 2;
+                    if (diff < -Math.PI) diff += Math.PI * 2;
+                    v.mesh.rotation.y = vAny.prevAngle + diff * actualAlpha;
+                }
             }
         }
     }
@@ -553,6 +617,14 @@ export default class Sumo3D {
         if (faceData) {
             return faceData;
         }
+        // Check if the intersected object itself has faceToUserData mapping (from merged geometries)
+        const faceIndex = intersect.faceIndex;
+        if (faceIndex !== undefined && faceIndex !== null && intersect.object.userData?.faceToUserData) {
+            const lookupData = intersect.object.userData.faceToUserData[faceIndex];
+            if (lookupData) {
+                return lookupData;
+            }
+        }
         // Otherwise look for userData on this object or its parents.
         return this.checkParentsForUserData(intersect.object);
     }
@@ -639,7 +711,7 @@ export default class Sumo3D {
     unhighlightRoute() {
         this.highlightedRoute.forEach(({ highlightedMesh, originalMesh }) => {
             this.scene.remove(highlightedMesh);
-            originalMesh.visible = true;
+            originalMesh.visible = originalMesh.userData?.isHidden ? false : true;
         });
     }
 
@@ -654,7 +726,7 @@ export default class Sumo3D {
         this.highlightedVehicles = [];
         this.highlightedMeshes.forEach(({ highlightedMesh, originalMesh }) => {
             this.scene.remove(highlightedMesh);
-            originalMesh.visible = true;
+            originalMesh.visible = originalMesh.userData?.isHidden ? false : true;
         });
         this.highlightedMeshes = [];
         return;

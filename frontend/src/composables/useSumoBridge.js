@@ -279,10 +279,10 @@ sumoActions.changeStrategy = async (newStrategy) => {
   }
 }
 
-// hardReload: force refresh the iframe
+// hardReload: force refresh the iframe with cache-busting
 sumoActions.hardReload = () => {
   if (mapFrameRef.value) {
-    mapFrameRef.value.src = mapFrameRef.value.src
+    mapFrameRef.value.src = `/map/?iframe=true&_t=${Date.now()}`
   }
 }
 

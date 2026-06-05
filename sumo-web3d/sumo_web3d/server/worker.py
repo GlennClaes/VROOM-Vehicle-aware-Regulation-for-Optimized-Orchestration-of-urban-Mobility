@@ -7,6 +7,15 @@ import traci
 import asyncio
 from .simulation import start_sumo_executable, simulate_next_step
 from .traffic_manager import TrafficManager, batch_predict_ai
+import sys
+try:
+    from .rl_core.vroom_architecture import TrafficNetwork
+except ImportError:
+    try:
+        from rl_core.vroom_architecture import TrafficNetwork
+    except ImportError:
+        sys.path.append(os.path.join(os.path.dirname(__file__), "rl_core"))
+        from vroom_architecture import TrafficNetwork
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
@@ -39,12 +48,21 @@ class SimulationWorker:
         elif 'quiet' in name: intensity = 0.4
         elif 'rush' in name: intensity = 1.0
 
+        # Instantiate unified TrafficNetwork
+        network = TrafficNetwork()
+
         all_tl_ids = conn.trafficlight.getIDList()
         traffic_managers = []
         for tls_id in all_tl_ids:
             tm = TrafficManager(tls_id)
             tm.initialize(conn)
+            tm.network = network
+            if tm.node:
+                network.add_intersection(tm.node)
             traffic_managers.append(tm)
+
+        # Build network-wide neighborhood connections
+        network.build_neighborhood_graph()
 
         last_vehicles = {}
         last_lights = {}
@@ -111,26 +129,23 @@ class SimulationWorker:
                 def strip_non_visual(d):
                     return {k: v for k, v in d.items() if k in visual_keys}
 
-                if not hasattr(self, '_last_sent'): self._last_sent = {}
                 creations = {}
                 for vid, v in snapshot['vehicles']['creations'].items():
                     creations[vid] = {k: v for k, v in v.items() if k in visual_keys}
-                    self._last_sent[vid] = (v.get('x',0), v.get('y',0), v.get('angle',0))
+                    network.prediction_engine.filter_vehicle_movement(
+                        vid, v.get('x', 0.0), v.get('y', 0.0), v.get('angle', 0.0)
+                    )
                 
                 updates = {}
                 for vid, v in snapshot['vehicles']['updates'].items():
-                    curr = (v.get('x',0), v.get('y',0), v.get('angle',0))
-                    prev = self._last_sent.get(vid)
-                    moved = True
-                    if prev:
-                        if (curr[0]-prev[0])**2 + (curr[1]-prev[1])**2 < 0.01 and abs(curr[2]-prev[2]) < 1.0:
-                            moved = False
+                    moved = network.prediction_engine.filter_vehicle_movement(
+                        vid, v.get('x', 0.0), v.get('y', 0.0), v.get('angle', 0.0)
+                    )
                     if moved:
                         updates[vid] = {k: v for k, v in v.items() if k in visual_keys}
-                        self._last_sent[vid] = curr
                 
                 for vid in snapshot['vehicles']['removals']:
-                    if vid in self._last_sent: del self._last_sent[vid]
+                    network.prediction_engine.remove_vehicle_from_cache(vid)
                 
                 # Only include full KPIs every 20 steps (approx 1s), but ALWAYS for the first 20 steps to prime the UI
                 include_kpis = (step_count <= 20) or (step_count % 20 == 1)

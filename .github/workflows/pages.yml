@@ -43,6 +43,9 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          enablement: true
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3

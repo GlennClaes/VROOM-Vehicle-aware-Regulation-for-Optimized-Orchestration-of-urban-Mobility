@@ -106,3 +106,8 @@ htmlcov/
 .idea/
 test.db
 coverage.json
+
+# VROOM real traffic-light local build output
+production-real-traffic-lights/build/
+production-real-traffic-lights/.cache/
+production-real-traffic-lights/Testing/

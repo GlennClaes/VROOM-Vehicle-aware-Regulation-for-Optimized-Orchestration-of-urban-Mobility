@@ -46,7 +46,7 @@ services:
   nats:
     image: nats:2.10-alpine
     container_name: nats-real
-    command: ["-js", "-m", "8222", "--auth", "vroomsecuretoken123"]
+    command: ["-js", "-m", "8222", "--auth", "${NATS_AUTH_TOKEN:-vroomsecuretoken123}"]
     ports:
       - "${NATS_PORT:-4222}:4222"
       - "${NATS_MONITOR_PORT:-8222}:8222"
@@ -65,7 +65,7 @@ services:
       DATABASE_URL: mysql+pymysql://${MYSQL_USER:-myuser}:${MYSQL_PASSWORD:-mypassword}@mysql-prod:3306/${MYSQL_DATABASE:-mydatabase}
       REDIS_HOST: redis-prod
       REDIS_PORT: 6379
-      VROOM_NATS_URL: nats://vroomsecuretoken123@nats:4222
+      VROOM_NATS_URL: nats://${NATS_AUTH_TOKEN:-vroomsecuretoken123}@nats:4222
       TZ: Europe/Brussels
       OMP_NUM_THREADS: 1
       MKL_NUM_THREADS: 1
@@ -137,13 +137,13 @@ services:
   real-traffic-controller-a:
     build:
       context: ./production-real-traffic-lights
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.prod
     image: vroom-real-traffic-controller:prod
     env_file:
       - ./production-real-traffic-lights/.env.example
     environment:
       VROOM_INTERSECTION_ID: hasselt-xl-a
-      VROOM_NATS_URL: nats://vroomsecuretoken123@nats:4222
+      VROOM_NATS_URL: nats://${NATS_AUTH_TOKEN:-vroomsecuretoken123}@nats:4222
       VROOM_HARDWARE_ADAPTER: mock
     depends_on:
       nats:
@@ -155,7 +155,7 @@ services:
       - ./production-real-traffic-lights/.env.example
     environment:
       VROOM_INTERSECTION_ID: hasselt-xl-b
-      VROOM_NATS_URL: nats://vroomsecuretoken123@nats:4222
+      VROOM_NATS_URL: nats://${NATS_AUTH_TOKEN:-vroomsecuretoken123}@nats:4222
       VROOM_HARDWARE_ADAPTER: mock
     depends_on:
       nats:

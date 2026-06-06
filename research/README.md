@@ -11,5 +11,6 @@ This folder contains the source material used to build and document VROOM:
 | `sprint-2/` | Sprint 2 implementation and research presentations. |
 | `sprint-3/` | Final project presentation. |
 | `assets/` | Architecture diagram and reusable visual evidence. |
+| `TECHNOLOGY_RADAR.md` | Future technology options such as Mojo, ONNX Runtime, static analysis and hardware-in-the-loop testing. |
 
 See [SOURCES.md](SOURCES.md) for the full source register.

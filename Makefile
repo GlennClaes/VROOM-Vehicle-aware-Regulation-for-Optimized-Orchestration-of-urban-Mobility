@@ -1,6 +1,6 @@
 # 🚦 VROOM TRAFFIC AI - MAKEFILE 🚦
 
-.PHONY: setup dev prod prod-real real-controller-build real-controller-test stop logs status clean prune train eval test test-backend test-frontend dashboard backup restore doctor vroom init fix-perms
+.PHONY: setup local-setup dev prod prod-real real-controller-build real-controller-test real-controller-docker-test stop logs status clean prune train eval test test-backend test-frontend dashboard backup restore doctor vroom init fix-perms
 
 # --- INTERACTIVE ---
 
@@ -16,8 +16,8 @@ init:
 
 setup:
 	@echo "🚀 Setting up VROOM environment..."
-	docker compose build --no-cache
-	docker compose run --rm backend python -m app.initial_setup
+	docker compose -f docker-compose.dev.yml build --no-cache
+	docker compose -f docker-compose.dev.yml run --rm backend python -m app.initial_setup
 
 local-setup:
 	@echo "🚀 Setting up local database and environment outside Docker..."
@@ -25,28 +25,28 @@ local-setup:
 
 dev:
 	@echo "🛠️ Stopping any conflicting containers..."
+	docker compose -f docker-compose.dev.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
-	docker compose down --remove-orphans 2>/dev/null || true
 	@echo "🛠️ Starting Development Environment (Fast)..."
-	docker compose up --remove-orphans
+	docker compose -f docker-compose.dev.yml up --remove-orphans
 
 dev-build:
 	@echo "🛠️ Stopping any conflicting containers..."
+	docker compose -f docker-compose.dev.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
-	docker compose down --remove-orphans 2>/dev/null || true
 	@echo "🏗️ Rebuilding and Starting Development Environment..."
-	docker compose up --build --remove-orphans
+	docker compose -f docker-compose.dev.yml up --build --remove-orphans
 
 prod:
 	@echo "🛠️ Stopping any conflicting containers..."
-	docker compose down --remove-orphans 2>/dev/null || true
+	docker compose -f docker-compose.dev.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 	@echo "🏗️ Starting Production Environment..."
 	docker compose -f docker-compose.prod.yml up --build
 
 prod-real:
 	@echo "Starting VROOM production-real stack with NATS and mocked real-light controllers..."
-	docker compose down --remove-orphans 2>/dev/null || true
+	docker compose -f docker-compose.dev.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.production-real.yml down --remove-orphans 2>/dev/null || true
 	docker compose -f docker-compose.production-real.yml up --build
@@ -58,15 +58,25 @@ real-controller-build:
 real-controller-test: real-controller-build
 	ctest --test-dir production-real-traffic-lights/build --output-on-failure
 
+real-controller-docker-test:
+	python scripts/validate_docker_layout.py
+	docker build -f production-real-traffic-lights/docker/Dockerfile.prod -t vroom-real-traffic-controller:local-check production-real-traffic-lights
+	docker run --rm vroom-real-traffic-controller:local-check --once
+	docker compose -f docker-compose.dev.yml config --quiet
+	docker compose -f docker-compose.prod.yml config --quiet
+	docker compose -f production-real-traffic-lights/docker-compose.dev.yml config --quiet
+	docker compose -f production-real-traffic-lights/docker-compose.prod.yml config --quiet
+	docker compose -f docker-compose.production-real.yml config --quiet
+
 # --- MONITORING ---
 
 logs:
 	@echo "📜 Viewing Live Logs..."
-	docker compose logs -f
+	docker compose -f docker-compose.dev.yml logs -f
 
 status:
 	@echo "📊 Checking System Status..."
-	docker compose ps
+	docker compose -f docker-compose.dev.yml ps
 	@echo "\n--- API Health ---"
 	curl -s http://localhost:8000/health || echo "Backend unreachable"
 
@@ -86,7 +96,7 @@ train:
 	@if [ -f scripts/09_run-training.sh ]; then \
 		chmod +x scripts/09_run-training.sh && ./scripts/09_run-training.sh; \
 	else \
-		docker compose exec backend python -m rl.trainer; \
+		docker compose -f docker-compose.dev.yml exec backend python -m rl.trainer; \
 	fi
 
 eval:
@@ -94,7 +104,7 @@ eval:
 	@if [ -f scripts/09b_evaluate-model.sh ]; then \
 		chmod +x scripts/09b_evaluate-model.sh && ./scripts/09b_evaluate-model.sh; \
 	else \
-		docker compose exec backend python -m rl.evaluate; \
+		docker compose -f docker-compose.dev.yml exec backend python -m rl.evaluate; \
 	fi
 
 # --- TESTING & QUALITY ---
@@ -103,11 +113,11 @@ test: test-backend test-frontend
 
 ci: quality test
 	@echo "🚀 CI Simulation complete. Checking coverage..."
-	docker compose exec backend pytest --cov=app --cov=rl --cov=baseline --cov-fail-under=80
+	docker compose -f docker-compose.dev.yml exec backend pytest --cov=app --cov=rl --cov=baseline --cov-fail-under=80
 
 test-backend:
 	@echo "🧪 Running Backend Tests..."
-	docker compose exec backend pytest --cov=app --cov=rl --cov-report=term-missing
+	docker compose -f docker-compose.dev.yml exec backend pytest --cov=app --cov=rl --cov-report=term-missing
 
 test-frontend:
 	@echo "🧪 Running Frontend Tests..."
@@ -124,7 +134,7 @@ quality:
 	@if [ -f scripts/02_check-quality.sh ]; then \
 		chmod +x scripts/02_check-quality.sh && ./scripts/02_check-quality.sh; \
 	else \
-		docker compose exec backend flake8 .; \
+		docker compose -f docker-compose.dev.yml exec backend flake8 .; \
 		cd frontend && npm run lint; \
 	fi
 
@@ -132,14 +142,14 @@ quality:
 
 stop:
 	@echo "🛑 Stopping all services..."
-	docker compose down --remove-orphans
+	docker compose -f docker-compose.dev.yml down --remove-orphans
 	docker compose -f docker-compose.prod.yml down --remove-orphans
 	docker compose -f docker-compose.production-real.yml down --remove-orphans
 
 clean:
 	@echo "🧹 Hard Clean / Reset..."
 	docker compose -f docker-compose.prod.yml down --remove-orphans
-	docker compose down --remove-orphans
+	docker compose -f docker-compose.dev.yml down --remove-orphans
 	docker network prune -f
 	docker container prune -f
 	@echo "✅ Cleanup complete."

@@ -147,7 +147,7 @@ The module is production-oriented preparation, not a certified road-side control
 |   |-- src/                 # Controller, adapters, logger and CLI entrypoint
 |   |-- tests/               # C++ protocol and fallback tests
 |   |-- docs/                # Real-light protocol and safety notes
-|   `-- docker/              # Production controller Dockerfile
+|   `-- docker/              # Dockerfile.dev and Dockerfile.prod
 |-- docs/                    # Documentation entry point and docs-site guidance
 |-- docs-site/               # Visual Vue/Vite documentation site for GitHub Pages
 |-- docker/                  # Deployment notes for compose files and service images
@@ -156,7 +156,8 @@ The module is production-oriented preparation, not a certified road-side control
 |-- tests/                   # Test-location index across backend/frontend/controller
 |-- database/schema.sql      # MySQL schema loaded by Docker Compose
 |-- scripts/                 # Local helper scripts used by VROOM menu, Makefile and manual checks
-|-- docker-compose.yml       # Development stack
+|-- docker-compose.dev.yml   # Development stack with hot reload
+|-- docker-compose.yml       # Default compatibility file for the dev stack
 |-- docker-compose.prod.yml  # Production-style stack with gateway
 |-- docker-compose.production-real.yml
 |                              # Full stack with dashboard, backend, SUMO, NATS and real-light mocks
@@ -200,12 +201,13 @@ Direct Makefile shortcuts:
 | Command | What it does |
 | --- | --- |
 | `make setup` | Builds Docker images without cache and runs the backend initial setup command. |
-| `make dev` | Stops conflicting stacks and starts the development compose stack without rebuilding. |
-| `make dev-build` | Rebuilds and starts the development stack. Use this after dependency or Dockerfile changes. |
+| `make dev` | Stops conflicting stacks and starts `docker-compose.dev.yml` without rebuilding. |
+| `make dev-build` | Rebuilds and starts `docker-compose.dev.yml`. Use this after dependency or Dockerfile changes. |
 | `make prod` | Starts the production-style stack using `docker-compose.prod.yml`. |
 | `make prod-real` | Starts the full production-real stack with NATS and mocked C++ real-light controllers. |
 | `make real-controller-build` | Configures and builds the C++ real-light controller with CMake. |
 | `make real-controller-test` | Builds the C++ controller and runs its protocol/fallback tests. |
+| `make real-controller-docker-test` | Validates Docker naming, builds the controller Docker image, runs a smoke test, and validates compose files. |
 | `make stop` | Stops development, production and production-real compose stacks. |
 | `make logs` | Follows logs from the development compose stack. |
 | `make status` | Shows container status and checks `http://localhost:8000/health`. |
@@ -283,7 +285,7 @@ The current SUMO environment exposes a 48-feature observation vector and an 8-ac
 
 ## Docker and Containers
 
-Development compose (`docker-compose.yml`) starts:
+Development compose (`docker-compose.dev.yml`) starts the hot-reload stack. The root `docker-compose.yml` is kept as a default compatibility file for people who type `docker compose up` without `-f`.
 
 | Container | Image/build | Notes |
 | --- | --- | --- |
@@ -311,7 +313,7 @@ Production-real compose (`docker-compose.production-real.yml`) adds the physical
 | Container | Image/build | Notes |
 | --- | --- | --- |
 | `nats` | `nats:2.10-alpine` | Low-latency communication bus for controller heartbeat, state, intent, command and ack messages. |
-| `real-traffic-controller-a` | `production-real-traffic-lights/docker/Dockerfile` | Mocked C++ controller node for junction A. |
+| `real-traffic-controller-a` | `production-real-traffic-lights/docker/Dockerfile.prod` | Mocked C++ controller node for junction A. |
 | `real-traffic-controller-b` | `vroom-real-traffic-controller:prod` | Second mocked C++ controller node using the same built image. |
 
 Build and test the C++ controller directly:
@@ -351,8 +353,10 @@ The visual documentation site lives in [docs-site](docs-site). It uses the same 
 Source material is collected in [research](research):
 
 - [SOURCES.md](research/SOURCES.md) lists the assignment, research paper, sprint decks, architecture diagram, technologies and literature.
+- [TECHNOLOGY_RADAR.md](research/TECHNOLOGY_RADAR.md) captures future optimization ideas such as Mojo, ONNX Runtime, static analysis and hardware-in-the-loop tests.
 - `research/papers/` contains the VROOM research paper.
 - `research/sprint-0/` through `research/sprint-3/` contain the project planning and presentation evidence.
+- [AGENTS.md](AGENTS.md) defines reusable AI-agent review roles for safety, C++ tests, deployment, documentation and security.
 
 ## DevOps
 

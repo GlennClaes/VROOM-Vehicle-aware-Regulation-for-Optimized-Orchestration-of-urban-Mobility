@@ -1,0 +1,110 @@
+name: Real Traffic Lights CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'production-real-traffic-lights/**'
+      - 'backend/Dockerfile*'
+      - 'frontend/Dockerfile*'
+      - 'sumo-web3d/Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'scripts/validate_docker_layout.py'
+      - '.github/workflows/real-traffic-lights-ci.yml'
+      - '.clang-format'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'production-real-traffic-lights/**'
+      - 'backend/Dockerfile*'
+      - 'frontend/Dockerfile*'
+      - 'sumo-web3d/Dockerfile*'
+      - 'docker-compose*.yml'
+      - 'scripts/validate_docker_layout.py'
+      - '.github/workflows/real-traffic-lights-ci.yml'
+      - '.clang-format'
+
+permissions:
+  contents: read
+
+jobs:
+  cxx-controller:
+    name: C++ controller build and tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install C++ toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake g++ make python3
+
+      - name: Validate Docker naming and compose references
+        run: python3 scripts/validate_docker_layout.py
+
+      - name: Validate real-light config
+        run: |
+          python3 production-real-traffic-lights/tests/validate_config.py \
+            production-real-traffic-lights/config/intersections.example.json
+
+      - name: Configure CMake
+        run: |
+          cmake -S production-real-traffic-lights -B production-real-traffic-lights/build \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build C++ controller
+        run: cmake --build production-real-traffic-lights/build --parallel
+
+      - name: Run C++ tests
+        run: ctest --test-dir production-real-traffic-lights/build --output-on-failure
+
+      - name: Smoke test controller binary
+        run: production-real-traffic-lights/build/vroom-real-controller --once
+
+  docker-controller:
+    name: Production controller Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image with embedded C++ tests
+        run: |
+          docker build \
+            -f production-real-traffic-lights/docker/Dockerfile.prod \
+            -t vroom-real-traffic-controller:ci \
+            production-real-traffic-lights
+
+      - name: Smoke test Docker image
+        run: docker run --rm vroom-real-traffic-controller:ci --once
+
+  compose-config:
+    name: Compose config validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate controller compose
+        run: docker compose -f production-real-traffic-lights/docker-compose.dev.yml config --quiet
+
+      - name: Validate controller production compose
+        run: docker compose -f production-real-traffic-lights/docker-compose.prod.yml config --quiet
+
+      - name: Validate root development compose
+        run: docker compose -f docker-compose.dev.yml config --quiet
+
+      - name: Validate root production compose
+        run: docker compose -f docker-compose.prod.yml config --quiet
+
+      - name: Validate full production-real compose
+        run: docker compose -f docker-compose.production-real.yml config --quiet

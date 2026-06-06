@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vroom.local/schemas/intersections.schema.json",
+  "title": "VROOM real traffic-light intersection configuration",
+  "type": "object",
+  "required": ["transport", "intersections"],
+  "additionalProperties": false,
+  "properties": {
+    "transport": {
+      "type": "object",
+      "required": ["framework", "url", "heartbeat_interval_ms", "communication_timeout_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "framework": { "type": "string", "enum": ["nats"] },
+        "url": { "type": "string", "minLength": 1 },
+        "heartbeat_interval_ms": { "type": "integer", "minimum": 100, "maximum": 10000 },
+        "communication_timeout_ms": { "type": "integer", "minimum": 250, "maximum": 60000 }
+      }
+    },
+    "intersections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/intersection" }
+    }
+  },
+  "$defs": {
+    "intersection": {
+      "type": "object",
+      "required": ["id", "adapter"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "enum": ["mock", "gpio", "plc"] },
+        "dry_run": { "type": "boolean" },
+        "endpoint": { "type": "string" },
+        "all_red_duration_ms": { "type": "integer", "minimum": 500, "maximum": 30000 },
+        "fixed_phase_duration_ms": { "type": "integer", "minimum": 3000, "maximum": 120000 },
+        "signal_heads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/signal_head" }
+        },
+        "pins": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gpio_pin" }
+        },
+        "registers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/plc_register" }
+        }
+      }
+    },
+    "signal_head": {
+      "type": "object",
+      "required": ["id", "group"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "group": { "type": "string", "enum": ["north_south", "east_west"] }
+      }
+    },
+    "gpio_pin": {
+      "type": "object",
+      "required": ["signal_id", "color", "pin", "active_high"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_id": { "type": "string", "minLength": 1 },
+        "color": { "type": "string", "enum": ["red", "amber", "green", "off"] },
+        "pin": { "type": "integer", "minimum": 0 },
+        "active_high": { "type": "boolean" }
+      }
+    },
+    "plc_register": {
+      "type": "object",
+      "required": ["signal_id", "address", "red_value", "amber_value", "green_value", "off_value"],
+      "additionalProperties": false,
+      "properties": {
+        "signal_id": { "type": "string", "minLength": 1 },
+        "address": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "red_value": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "amber_value": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "green_value": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "off_value": { "type": "integer", "minimum": 0, "maximum": 65535 }
+      }
+    }
+  }
+}

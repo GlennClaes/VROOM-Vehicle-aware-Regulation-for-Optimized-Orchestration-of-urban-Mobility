@@ -327,7 +327,9 @@ bool IntersectionController::send_signal(
     }
 
     // 1. Bulb Sensing Simulation
-    if (!config_.failed_bulb_id.empty() && signal.id == config_.failed_bulb_id && color != SignalColor::Off) {
+    if (!config_.failed_bulb_id.empty()
+        && signal.id == config_.failed_bulb_id
+        && (color == SignalColor::Green || color == SignalColor::Amber)) {
         failed_ = true;
         health_status_ = "failed: bulb burnout on " + signal.id;
         Logger::instance().log(LogLevel::Warning, "BULB SENSING FAULT: detected burnout on bulb " + signal.id + "; triggering fail-safe shutdown (all dark)");

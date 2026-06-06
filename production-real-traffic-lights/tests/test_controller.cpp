@@ -1,7 +1,7 @@
 #include "vroom/intersection_controller.hpp"
 #include "vroom/mock_hardware_adapter.hpp"
 
-#include <cassert>
+#include <cstdlib>
 #include <iostream>
 
 namespace {
@@ -24,7 +24,16 @@ vroom::ControllerConfig config() {
     return value;
 }
 
+void require(bool condition, const char* expression) {
+    if (!condition) {
+        std::cerr << "test failed: " << expression << '\n';
+        std::exit(1);
+    }
+}
+
 } // namespace
+
+#define REQUIRE(expression) require((expression), #expression)
 
 int main() {
     std::string error;
@@ -34,21 +43,21 @@ int main() {
         vroom::MockHardwareAdapter hardware;
         vroom::IntersectionController controller(config(), hardware);
 
-        assert(controller.start(0, &error));
-        assert(controller.active_phase() == "ALL_RED");
+        REQUIRE(controller.start(0, &error));
+        REQUIRE(controller.active_phase() == "ALL_RED");
 
         // Switch to NS_GREEN
-        assert(controller.apply_phase("NS_GREEN", 100, &error));
-        assert(controller.active_phase() == "NS_GREEN");
+        REQUIRE(controller.apply_phase("NS_GREEN", 100, &error));
+        REQUIRE(controller.active_phase() == "NS_GREEN");
 
         // Normal change to EW_GREEN at t=500 should fail due to min_green_duration_ms (2000ms)
-        assert(!controller.apply_phase("EW_GREEN", 500, &error));
-        assert(controller.active_phase() == "NS_GREEN");
+        REQUIRE(!controller.apply_phase("EW_GREEN", 500, &error));
+        REQUIRE(controller.active_phase() == "NS_GREEN");
 
         // Force override (EV priority) at t=500 should succeed and bypass min green
-        assert(controller.apply_phase("EW_GREEN", 500, &error, true));
+        REQUIRE(controller.apply_phase("EW_GREEN", 500, &error, true));
         // It starts transitioning (NS_AMBER)
-        assert(controller.active_phase() == "NS_AMBER");
+        REQUIRE(controller.active_phase() == "NS_AMBER");
     }
 
     // --- Test 2: Bulb Failure Sensing ---
@@ -58,22 +67,22 @@ int main() {
         cfg.failed_bulb_id = "north"; // simulate failure on "north" signal head
         vroom::IntersectionController controller(cfg, hardware);
 
-        assert(controller.start(0, &error));
+        REQUIRE(controller.start(0, &error));
         // Applying NS_GREEN turns "north" green, which should trigger bulb sensing failure immediately
-        assert(!controller.apply_phase("NS_GREEN", 100, &error));
-        assert(controller.health_status().rfind("failed: bulb burnout", 0) == 0);
+        REQUIRE(!controller.apply_phase("NS_GREEN", 100, &error));
+        REQUIRE(controller.health_status().rfind("failed: bulb burnout", 0) == 0);
         
         // Assert that hardware commands forced all signals to Off
         // Last 4 commands should be Off for north, south, east, west
         bool all_off = true;
         const auto& cmds = hardware.commands();
-        assert(cmds.size() >= 4);
+        REQUIRE(cmds.size() >= 4);
         for (size_t i = cmds.size() - 4; i < cmds.size(); ++i) {
             if (cmds[i].color != vroom::SignalColor::Off) {
                 all_off = false;
             }
         }
-        assert(all_off);
+        REQUIRE(all_off);
     }
 
     // --- Test 3: Conflict Monitor Interlock ---
@@ -91,7 +100,7 @@ int main() {
         vroom::MockHardwareAdapter hardware;
         vroom::IntersectionController controller(cfg, hardware);
 
-        assert(controller.start(0, &error));
+        REQUIRE(controller.start(0, &error));
         // When we apply NS_GREEN, it sets "north" to Green.
         // But "north" is also in the "east_west" group which is red.
         // Wait, apply_group_phase sets group "north_south" to Green and others to Red.
@@ -148,21 +157,21 @@ int main() {
         vroom::MockHardwareAdapter hardware;
         vroom::IntersectionController controller(cfg, hardware);
 
-        assert(controller.start(0, &error));
+        REQUIRE(controller.start(0, &error));
         // Applying NS_GREEN should trip conflict monitor because "conflict_head" is in both groups.
-        assert(!controller.apply_phase("NS_GREEN", 100, &error));
-        assert(controller.health_status().rfind("failed: conflict detected", 0) == 0);
+        REQUIRE(!controller.apply_phase("NS_GREEN", 100, &error));
+        REQUIRE(controller.health_status().rfind("failed: conflict detected", 0) == 0);
         
         // Assert that hardware commands forced all signals to Red
         const auto& cmds = hardware.commands();
-        assert(cmds.size() >= 4);
+        REQUIRE(cmds.size() >= 4);
         bool all_red = true;
         for (size_t i = cmds.size() - 4; i < cmds.size(); ++i) {
             if (cmds[i].color != vroom::SignalColor::Red) {
                 all_red = false;
             }
         }
-        assert(all_red);
+        REQUIRE(all_red);
     }
 
     std::cout << "all intersection controller tests passed including safety checks\n";

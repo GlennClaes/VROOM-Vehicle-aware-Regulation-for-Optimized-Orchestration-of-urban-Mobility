@@ -11,27 +11,17 @@ services:
       timeout: 3s
       retries: 10
 
-  intersection-a:
+  intersection-dev:
     build:
       context: .
-      dockerfile: docker/Dockerfile
-    image: vroom-real-traffic-controller:prod
+      dockerfile: docker/Dockerfile.dev
+    image: vroom-real-traffic-controller:dev
+    command: ["--once"]
     env_file:
       - .env.example
     environment:
-      VROOM_INTERSECTION_ID: hasselt-xl-a
+      VROOM_INTERSECTION_ID: hasselt-xl-dev
+      VROOM_HARDWARE_ADAPTER: mock
     depends_on:
       nats:
         condition: service_healthy
-
-  intersection-b:
-    image: vroom-real-traffic-controller:prod
-    env_file:
-      - .env.example
-    environment:
-      VROOM_INTERSECTION_ID: hasselt-xl-b
-    depends_on:
-      nats:
-        condition: service_healthy
-      intersection-a:
-        condition: service_started

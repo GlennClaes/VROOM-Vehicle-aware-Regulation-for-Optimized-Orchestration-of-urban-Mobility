@@ -16,8 +16,10 @@ production-real-traffic-lights/
 |-- tests/                      # Dependency-free C++ tests
 |-- config/                     # Example field configuration
 |-- docs/                       # Safety and protocol documentation
-|-- docker/                     # Production Dockerfile
-|-- docker-compose.yml          # Controller + NATS local production simulation
+|-- docker/                     # Dockerfile.dev and Dockerfile.prod
+|-- scripts/                    # Local Windows/Linux test runners
+|-- docker-compose.dev.yml      # Controller + NATS development smoke stack
+|-- docker-compose.prod.yml     # Controller + NATS production-style smoke stack
 |-- cabinet_tester.py           # Commissioning & hardware testing script (Python)
 |-- CUSTOMER_INTEGRATION_GUIDE.md # Customer deployment & safety blueprint
 `-- .env.example
@@ -57,10 +59,24 @@ Run one mocked controller tick:
 production-real-traffic-lights/build/vroom-real-controller --once
 ```
 
+One-command test runners are available:
+
+```powershell
+production-real-traffic-lights\scripts\test-local.ps1
+production-real-traffic-lights\scripts\test-local.ps1 -DockerOnly
+```
+
+```bash
+sh production-real-traffic-lights/scripts/test-local.sh
+sh production-real-traffic-lights/scripts/test-local.sh --docker-only
+```
+
+More details are documented in [docs/TESTING.md](docs/TESTING.md).
+
 ## Docker
 
 ```bash
-docker compose -f production-real-traffic-lights/docker-compose.yml up --build
+docker compose -f production-real-traffic-lights/docker-compose.prod.yml up --build
 ```
 
 This starts:
@@ -72,6 +88,13 @@ This starts:
 | `intersection-b` | Mocked real-light controller for junction B. |
 
 For the full VROOM stack with dashboard, backend, SUMO simulation, Redis, MySQL, NATS and mocked real-light controllers, use the root-level `docker-compose.production-real.yml`.
+
+## Config Validation and CI
+
+- `config/intersections.schema.json` documents the expected JSON configuration shape.
+- `tests/validate_config.py` validates `config/intersections.example.json` without external Python dependencies.
+- `.github/workflows/real-traffic-lights-ci.yml` builds the controller, runs `ctest`, validates compose files, and smoke-tests the Docker image on every relevant PR/push.
+- The root [AGENTS.md](../AGENTS.md) contains AI-agent review roles for safety, C++ tests, deployment, documentation and security.
 
 ## Cabinet Testing & Commissioning
 

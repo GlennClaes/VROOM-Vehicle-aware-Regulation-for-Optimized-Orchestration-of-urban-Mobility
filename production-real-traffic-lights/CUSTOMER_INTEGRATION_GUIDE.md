@@ -125,7 +125,7 @@ To integrate VROOM at a client's site, follow this step-by-step checklist:
 ### ⬜ Phase 1: Mock Test
 - Run the simulation in mock mode:
   ```bash
-  docker compose -f production-real-traffic-lights/docker-compose.yml up --build
+  docker compose -f production-real-traffic-lights/docker-compose.prod.yml up --build
   ```
 - Send commands via NATS to verify that state switches work correctly in mock outputs.
 
@@ -220,4 +220,3 @@ VROOM is built with industry-standard safety mechanisms to prevent accidents:
 2. **Minimum Green Enforcer**: The C++ controller will reject AI phase commands if the current phase has been active for less than the minimum safe green time (default: 6 seconds, configured via `VROOM_MIN_GREEN_DURATION_MS`) to prevent dangerous rapid switching.
 3. **Yellow Clearance Enforcer**: When changing phases, the C++ controller autonomously injects a yellow/amber phase (default: 3 seconds, configured via `VROOM_AMBER_DURATION_MS`) to allow clearing of the intersection before turning the conflicting lane green.
 4. **Physical Watchdog Link**: Periodically registers keep-alive ticks to `/dev/watchdog` to prevent mechanical freeze on critical hardware interfaces.
-

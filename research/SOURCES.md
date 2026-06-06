@@ -17,6 +17,7 @@ This register lists the material used in the project, documentation site, resear
 | Sprint 2 implementation presentation | `research/sprint-2/VROOM_Sprint2_AIN3.pptx` | Scenario loading, baseline/SAM strategy selection, KPI dashboard and frontend/backend/SUMO integration. |
 | Sprint 2 research presentation | `research/sprint-2/VROOM_Sprint2-Research_AIN3.pptx` | DQN/D3QN comparison, metrics, scenarios and research method. |
 | Sprint 3 final presentation | `research/sprint-3/VROOM_AIN3.pptx` | Final architecture, problem statement, tech stack, conclusion and reflection. |
+| Technology radar | `research/TECHNOLOGY_RADAR.md` | Future optimization options, including Mojo as an AI-performance research track. |
 
 ## Technologies and Frameworks
 

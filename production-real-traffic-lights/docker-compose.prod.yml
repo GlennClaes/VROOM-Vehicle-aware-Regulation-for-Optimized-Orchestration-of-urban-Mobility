@@ -1,0 +1,37 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  intersection-a:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    image: vroom-real-traffic-controller:prod
+    env_file:
+      - .env.example
+    environment:
+      VROOM_INTERSECTION_ID: hasselt-xl-a
+    depends_on:
+      nats:
+        condition: service_healthy
+
+  intersection-b:
+    image: vroom-real-traffic-controller:prod
+    env_file:
+      - .env.example
+    environment:
+      VROOM_INTERSECTION_ID: hasselt-xl-b
+    depends_on:
+      nats:
+        condition: service_healthy
+      intersection-a:
+        condition: service_started

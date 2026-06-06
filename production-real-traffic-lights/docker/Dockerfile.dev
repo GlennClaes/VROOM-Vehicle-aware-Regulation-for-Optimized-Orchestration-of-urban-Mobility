@@ -1,0 +1,12 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache cmake g++ make gdb libstdc++ libgcc
+
+WORKDIR /src
+COPY . .
+
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+    && cmake --build build --parallel \
+    && ctest --test-dir build --output-on-failure
+
+CMD ["./build/vroom-real-controller", "--once"]

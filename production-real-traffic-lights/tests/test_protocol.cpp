@@ -1,7 +1,20 @@
 #include "vroom/message_protocol.hpp"
 
-#include <cassert>
+#include <cstdlib>
 #include <iostream>
+
+namespace {
+
+void require(bool condition, const char* expression) {
+    if (!condition) {
+        std::cerr << "test failed: " << expression << '\n';
+        std::exit(1);
+    }
+}
+
+} // namespace
+
+#define REQUIRE(expression) require((expression), #expression)
 
 int main() {
     vroom::TrafficMessage message;
@@ -17,18 +30,18 @@ int main() {
     std::string error;
     const auto decoded = vroom::decode_message(encoded, &error);
 
-    assert(decoded.has_value());
-    assert(decoded->type == vroom::MessageType::State);
-    assert(decoded->intersection_id == "junction-a");
-    assert(decoded->sequence == 42);
-    assert(decoded->timestamp_ms == 123456);
-    assert(decoded->phase == "NS_GREEN");
-    assert(decoded->health == "ok");
-    assert(decoded->ttl_ms == 1500);
+    REQUIRE(decoded.has_value());
+    REQUIRE(decoded->type == vroom::MessageType::State);
+    REQUIRE(decoded->intersection_id == "junction-a");
+    REQUIRE(decoded->sequence == 42);
+    REQUIRE(decoded->timestamp_ms == 123456);
+    REQUIRE(decoded->phase == "NS_GREEN");
+    REQUIRE(decoded->health == "ok");
+    REQUIRE(decoded->ttl_ms == 1500);
 
     const auto invalid = vroom::decode_message("BROKEN|1|STATE", &error);
-    assert(!invalid.has_value());
-    assert(!error.empty());
+    REQUIRE(!invalid.has_value());
+    REQUIRE(!error.empty());
 
     std::cout << "message protocol tests passed\n";
     return 0;

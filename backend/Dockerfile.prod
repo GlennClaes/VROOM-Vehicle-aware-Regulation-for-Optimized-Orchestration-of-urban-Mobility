@@ -1,11 +1,19 @@
-FROM vroom-backend-base:latest
+FROM python:3.11-slim
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-privileged user and group
 RUN groupadd -g 10001 appgroup && \
     useradd -u 10000 -g appgroup -m -s /sbin/nologin appuser && \
     chown -R appuser:appgroup /app
+
+COPY --chown=appuser:appgroup requirements.txt .
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appgroup . .
 

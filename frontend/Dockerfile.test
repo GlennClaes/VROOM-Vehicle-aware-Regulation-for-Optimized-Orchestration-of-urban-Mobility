@@ -1,0 +1,6 @@
+FROM vroom-frontend-base:latest
+
+WORKDIR /app
+COPY . .
+
+CMD ["npm", "run", "test:unit"]

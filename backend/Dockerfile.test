@@ -1,0 +1,6 @@
+FROM vroom-backend-base:latest
+
+WORKDIR /app
+COPY . .
+
+CMD ["pytest", "--cov=app", "--cov=rl", "--cov-report=term-missing"]

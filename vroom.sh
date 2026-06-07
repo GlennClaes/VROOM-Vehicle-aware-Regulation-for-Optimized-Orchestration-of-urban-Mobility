@@ -63,8 +63,15 @@ while true; do
     read -p "Keuze [1-24, q]: " choice
 
     case $choice in
-        1) make setup ;;
-        2) make dev ;;
+        1) 
+            chmod +x scripts/001_build_all.sh
+            ./scripts/001_build_all.sh
+            make setup
+            ;;
+        2) 
+            chmod +x scripts/002d_run_full_stack.sh
+            ./scripts/002d_run_full_stack.sh
+            ;;
         3) make prod ;;
         4) make dashboard ;;
         5) make logs ;;
@@ -77,8 +84,14 @@ while true; do
         12) make backup ;;
         13) make restore ;;
         14) make prune ;;
-        15) make stop ;;
-        16) make clean ;;
+        15) 
+            chmod +x scripts/997d_stop_all.sh
+            ./scripts/997d_stop_all.sh
+            ;;
+        16) 
+            chmod +x scripts/999_cleanup.sh
+            ./scripts/999_cleanup.sh
+            ;;
         17) make test-backend ;;
         18) make test-frontend ;;
         19) make test-frontend-watch ;;

@@ -1,7 +1,0 @@
-/src/build/CMakeFiles/vroom_real_controller.dir
-/src/build/CMakeFiles/vroom-real-controller.dir
-/src/build/CMakeFiles/test_protocol.dir
-/src/build/CMakeFiles/test_controller.dir
-/src/build/CMakeFiles/test.dir
-/src/build/CMakeFiles/edit_cache.dir
-/src/build/CMakeFiles/rebuild_cache.dir

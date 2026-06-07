@@ -10,7 +10,7 @@ check_health() {
 # Auto-start check
 if ! check_health; then
     echo -e "🚀 Services are not running or still booting! Attempting background start..."
-    bash 06_run-app.sh -d
+    bash "$(dirname "$0")/006_run-app.sh" -d
     
     echo "⏳ Waiting for backend to become healthy (max 30s)..."
     MAX_RETRIES=30

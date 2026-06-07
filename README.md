@@ -220,8 +220,8 @@ Direct Makefile shortcuts:
 | `make quality` | Runs the project quality script when available. |
 | `make ci` | Runs quality and tests, then checks backend coverage against 80%. |
 | `make build-train` | Builds the dedicated training image from `backend/Dockerfile.train`. |
-| `make train` | Starts the interactive local training script `scripts/09_run-training.sh`. |
-| `make eval` | Runs `scripts/09b_evaluate-model.sh` when present, otherwise falls back to `python -m rl.evaluate` in the backend container. |
+| `make train` | Starts the interactive local training script `scripts/009_run-training.sh`. |
+| `make eval` | Runs `scripts/009b_evaluate-model.sh` when present, otherwise falls back to `python -m rl.evaluate` in the backend container. |
 | `make doctor` | Runs environment checks through `scripts/doctor.sh` if it exists. |
 | `make clean` | Stops stacks and prunes Docker networks/containers. |
 | `make prune` | Runs `docker system prune -f`. |
@@ -249,7 +249,7 @@ The active training flow is local-first. Use the VROOM menu and choose option `7
 make train
 ```
 
-This runs `scripts/09_run-training.sh`, which sets `PYTHONPATH` to `backend`, looks for existing checkpoints in `backend/rl/models`, and lets you choose:
+This runs `scripts/009_run-training.sh`, which sets `PYTHONPATH` to `backend`, looks for existing checkpoints in `backend/rl/models`, and lets you choose:
 
 | Option | Meaning |
 | --- | --- |
@@ -376,20 +376,20 @@ CI currently uses Python 3.11 and Node 20. Backend coverage is checked with `pyt
 
 | Script | Purpose |
 | --- | --- |
-| `scripts/01_setup-dev.sh` | Development setup helper. |
-| `scripts/02_check-quality.sh` | Docker-based quality/security checks. |
-| `scripts/03_run-tests.sh` | Docker-based backend and frontend test runner. |
-| `scripts/03b_run-tests-docker.sh` | Extra Docker test flow. |
-| `scripts/04_check-ci.sh` | Local CI-style checks. |
-| `scripts/05_test-cd.sh` | CD workflow helper/check. |
-| `scripts/06_run-app.sh` | App startup helper. |
-| `scripts/07_verify-api.sh` | API and service verification. |
-| `scripts/08_inspect-logs.sh` | Log inspection helper. |
-| `scripts/09_run-training.sh` | Interactive RL training manager. |
-| `scripts/09b_evaluate-model.sh` | Model evaluation helper. |
-| `scripts/10_debug-sumo.sh` | SUMO debugging helper. |
-| `scripts/11_stop-app.sh` | Stop helper. |
-| `scripts/12_clean-docker.sh` | Docker cleanup helper. |
+| `scripts/001_setup-dev.sh` | Development setup helper. |
+| `scripts/002_check-quality.sh` | Docker-based quality/security checks. |
+| `scripts/003_run-tests.sh` | Docker-based backend and frontend test runner. |
+| `scripts/003b_run-tests-docker.sh` | Extra Docker test flow. |
+| `scripts/004_check-ci.sh` | Local CI-style checks. |
+| `scripts/005_test-cd.sh` | CD workflow helper/check. |
+| `scripts/006_run-app.sh` | App startup helper. |
+| `scripts/007_verify-api.sh` | API and service verification. |
+| `scripts/008_inspect-logs.sh` | Log inspection helper. |
+| `scripts/009_run-training.sh` | Interactive RL training manager. |
+| `scripts/009b_evaluate-model.sh` | Model evaluation helper. |
+| `scripts/010_debug-sumo.sh` | SUMO debugging helper. |
+| `scripts/011_stop-app.sh` | Stop helper. |
+| `scripts/012_clean-docker.sh` | Docker cleanup helper. |
 | `scripts/doctor.sh` | Environment diagnostics. |
 | `scripts/backup-data.sh` | Data backup helper. |
 

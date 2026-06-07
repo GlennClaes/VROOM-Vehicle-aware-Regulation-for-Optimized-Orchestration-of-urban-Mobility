@@ -30,8 +30,8 @@ fi
 
 echo -e "\n🎉 Environment is ready!"
 echo "-------------------------------------------------------"
-echo "🚀 Start app:      ./run-app.sh"
-echo "🧪 Run tests:      ./check-ci.sh"
-echo "🤖 Start training: ./run-training.sh"
-echo "📜 View logs:      ./inspect-logs.sh"
+echo "🚀 Start app:      ./scripts/006_run-app.sh"
+echo "🧪 Run tests:      ./scripts/004_check-ci.sh"
+echo "🤖 Start training: ./scripts/009_run-training.sh"
+echo "📜 View logs:      ./scripts/008_inspect-logs.sh"
 echo "-------------------------------------------------------"

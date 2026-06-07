@@ -93,16 +93,16 @@ build-train:
 
 train:
 	@echo "🧠 Starting AI Training Pipeline..."
-	@if [ -f scripts/09_run-training.sh ]; then \
-		chmod +x scripts/09_run-training.sh && ./scripts/09_run-training.sh; \
+	@if [ -f scripts/009_run-training.sh ]; then \
+		chmod +x scripts/009_run-training.sh && ./scripts/009_run-training.sh; \
 	else \
 		docker compose -f docker-compose.dev.yml exec backend python -m rl.trainer; \
 	fi
 
 eval:
 	@echo "⚖️ Evaluating AI Model..."
-	@if [ -f scripts/09b_evaluate-model.sh ]; then \
-		chmod +x scripts/09b_evaluate-model.sh && ./scripts/09b_evaluate-model.sh; \
+	@if [ -f scripts/009b_evaluate-model.sh ]; then \
+		chmod +x scripts/009b_evaluate-model.sh && ./scripts/009b_evaluate-model.sh; \
 	else \
 		docker compose -f docker-compose.dev.yml exec backend python -m rl.evaluate; \
 	fi
@@ -131,8 +131,8 @@ test-frontend-ui:
 
 quality:
 	@echo "🧹 Running Quality Checks..."
-	@if [ -f scripts/02_check-quality.sh ]; then \
-		chmod +x scripts/02_check-quality.sh && ./scripts/02_check-quality.sh; \
+	@if [ -f scripts/002_check-quality.sh ]; then \
+		chmod +x scripts/002_check-quality.sh && ./scripts/002_check-quality.sh; \
 	else \
 		docker compose -f docker-compose.dev.yml exec backend flake8 .; \
 		cd frontend && npm run lint; \

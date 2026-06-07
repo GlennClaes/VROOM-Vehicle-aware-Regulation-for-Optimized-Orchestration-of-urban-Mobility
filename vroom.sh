@@ -64,13 +64,13 @@ while true; do
 
     case $choice in
         1) 
-            chmod +x scripts/001_build_all.sh
-            ./scripts/001_build_all.sh
+            chmod +x scripts/001e_build_all.sh
+            ./scripts/001e_build_all.sh
             make setup
             ;;
         2) 
-            chmod +x scripts/002d_run_full_stack.sh
-            ./scripts/002d_run_full_stack.sh
+            chmod +x scripts/002d_run_vroom_full_stack.sh
+            ./scripts/002d_run_vroom_full_stack.sh
             ;;
         3) make prod ;;
         4) make dashboard ;;
@@ -85,12 +85,12 @@ while true; do
         13) make restore ;;
         14) make prune ;;
         15) 
-            chmod +x scripts/997d_stop_all.sh
-            ./scripts/997d_stop_all.sh
+            chmod +x scripts/997d_stop_vroom_all_containers.sh
+            ./scripts/997d_stop_vroom_all_containers.sh
             ;;
         16) 
-            chmod +x scripts/999_cleanup.sh
-            ./scripts/999_cleanup.sh
+            chmod +x scripts/999d_cleanup.sh
+            ./scripts/999d_cleanup.sh
             ;;
         17) make test-backend ;;
         18) make test-frontend ;;

@@ -68,3 +68,16 @@ spec:
     protocol: TCP
     port: 8222
     targetPort: 8222
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-prod
+spec:
+  selector:
+    app: vroom-mysql
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+

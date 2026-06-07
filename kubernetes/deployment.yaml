@@ -56,6 +56,8 @@ spec:
           value: "vroom-redis-service"
         - name: REDIS_PORT
           value: "6379"
+        - name: VROOM_NATS_URL
+          value: "nats://vroomsecuretoken123@vroom-nats-edge-service:4222"
         ports:
         - containerPort: 8000
         resources:
@@ -143,3 +145,73 @@ spec:
           requests:
             cpu: "100m"
             memory: "128Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vroom-nats
+  labels:
+    app: vroom-nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vroom-nats
+  template:
+    metadata:
+      labels:
+        app: vroom-nats
+    spec:
+      containers:
+      - name: nats
+        image: nats:2.10-alpine
+        command: ["nats-server", "-js", "-m", "8222", "--auth", "vroomsecuretoken123"]
+        ports:
+        - containerPort: 4222
+        - containerPort: 8222
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vroom-mysql
+  labels:
+    app: vroom-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vroom-mysql
+  template:
+    metadata:
+      labels:
+        app: vroom-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.4
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "rootpassword"
+        - name: MYSQL_DATABASE
+          value: "vroomdb"
+        - name: MYSQL_USER
+          value: "myuser"
+        - name: MYSQL_PASSWORD
+          value: "mypassword"
+        ports:
+        - containerPort: 3306
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+

@@ -7,7 +7,7 @@ import router from './router'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min'
 
-import './styles/theme.css'
+import './styles/theme.scss'
 
 const mount = () => {
   const app = createApp(App)

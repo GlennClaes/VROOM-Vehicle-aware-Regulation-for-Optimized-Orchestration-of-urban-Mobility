@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[1]
-ALLOWED_DOCKERFILE_NAMES = {"Dockerfile.dev", "Dockerfile.prod", "Dockerfile.train"}
+ALLOWED_DOCKERFILE_NAMES = {"Dockerfile.dev", "Dockerfile.prod", "Dockerfile.train", "Dockerfile.base", "Dockerfile.test"}
 ALLOWED_ROOT_COMPOSE_NAMES = {
     "docker-compose.yml",
     "docker-compose.dev.yml",
